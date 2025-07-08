@@ -1,11 +1,13 @@
-import { Text, View } from "react-native";
+import { View, Text } from 'react-native'
+import React from 'react'
 
-export default function Index() {
+const HomeScreen = () => {
+  
   return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-xl font-bold text-green-500">
-        Welcome to Nativewind!
-      </Text>
+    <View>
+      <Text>HomeScreen</Text>
     </View>
-  );
+  )
 }
+
+export default HomeScreen
