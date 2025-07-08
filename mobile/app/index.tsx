@@ -1,11 +1,16 @@
-import { Text, View } from "react-native";
+import { View, Text } from 'react-native'
+import React from 'react'
+import { useClerk } from '@clerk/clerk-expo'
 
-export default function Index() {
+const HomeScreen = () => {
+  const { signOut} = useClerk();
   return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-xl font-bold text-green-500">
-        Welcome to Nativewind!
-      </Text>
+    <View>
+      <Text>HomeScreen</Text>
+      <Text onPress={() => signOut()} className='text-blue-500'>Sign Out</Text>
+      <Text className='items-center justify-center '>Welcome to the Home Screen!</Text>
     </View>
-  );
+  )
 }
+
+export default HomeScreen
