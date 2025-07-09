@@ -13,21 +13,20 @@ export const arcjetMiddleware = async (req, res, next) => {
                     error: "Too many requests",
                 });
             } else if (decision.reason.isBot()) {
+                if (decision.reason.isSpoofed()) {
+                    return res.status(403).json({
+                        message: "Access denied for spoofed bots",
+                        error: "Spoofed bot detected",
+                    });
+                }
                 return res.status(403).json({ message: "Access denied for bots", error: "Bot detected" });
             } else {
                 return res.status(403).json({ message: "Access denied by security", error: "Forbidden" });
             }
         }
 
-        // check for spoofing
-        if (decision.results.some((result) => result.reason.isSpoofed() && result.reason.isBot())) {
-            res.status(403).json({ message: "Access denied for spoofed requests", error: "Spoofed request" });
-            return;
-        }
-
-        next(); // Proceed to the next middleware or route handler
+        next();
     } catch (error) {
-        res.status(500).json({ message: "Internal server error", error: "Unexpected error" });
         console.error("Arcjet Middleware Error:", error);
         next();
     }
