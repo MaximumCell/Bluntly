@@ -67,7 +67,7 @@ export const createPost = asyncHandler(async (req, res) => {
         res.status(400);
         throw new Error("Content or image is required");
     }
-    const user = await User.findById({clearId: userId});
+    const user = await User.findById({ clerkId: userId});
     if (!user) {
         res.status(404);
         throw new Error("User not found");
