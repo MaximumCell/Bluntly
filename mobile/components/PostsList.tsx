@@ -1,14 +1,16 @@
 import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native'
-import React from 'react'
+import React, { useState } from 'react'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { usePosts } from '@/hooks/usePosts';
 import { Post } from '@/types';
 import PostCard from './PostCard';
+import CommentsModal from './CommentsModal';
 
 const PostsList = () => {
     const { currentUser } = useCurrentUser();
-    const { posts, isLoading, error, refetch, toggleLike, deletePost, checkIsLiked } = usePosts();
-    const [selectedPostId, setSelectedPostId] = React.useState<string | null>(null);
+    const { posts, isLoading, error, refetch, toggleLike, deletePost, checkIsLiked, likingPostId, deletingPostId } = usePosts();
+    const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+    const selectedPost = selectedPostId ? posts.find((post:Post) => post._id === selectedPostId) : null;
     if (isLoading) {
         return (
           <View className='p-8 items-center'>
@@ -40,8 +42,10 @@ const PostsList = () => {
   return (
     <>
       {posts.map((post: Post) => (
-        <PostCard key={post._id} post={post} onLike={toggleLike} onDelete={deletePost} currentUser={currentUser} isLiked={checkIsLiked(post.likes, currentUser)} onComment={(post: Post) => setSelectedPostId(post._id)} />
+        <PostCard key={post._id} post={post} onLike={toggleLike} onDelete={deletePost} currentUser={currentUser} isLiked={checkIsLiked(post.likes, currentUser)} onComment={(post: Post) => setSelectedPostId(post._id)} likingPostId={likingPostId} deletingPostId={deletingPostId} />
       ))}
+
+      <CommentsModal selectedPost={selectedPost} onClose={() => setSelectedPostId(null)} />
     </>
   )
 

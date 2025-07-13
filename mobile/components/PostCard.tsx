@@ -1,4 +1,4 @@
-import { View, Text, Alert, TouchableOpacity } from 'react-native'
+import { View, Text, Alert, TouchableOpacity, ActivityIndicator } from 'react-native'
 import React from 'react'
 import { Post, User } from '@/types';
 import { Image } from 'react-native';
@@ -12,10 +12,15 @@ interface PostCardProps {
     onComment: (post: Post) => void;
     isLiked?: boolean;
     currentUser: User;
+    likingPostId?: string | null;
+    deletingPostId?: string | null;
 }
 
-const PostCard = ({ post, onLike, onDelete, onComment, isLiked, currentUser }: PostCardProps) => {
+const PostCard = ({ post, onLike, onDelete, onComment, isLiked, currentUser, likingPostId, deletingPostId }: PostCardProps) => {
     const isOwnPost = currentUser && post.user._id === currentUser._id;
+
+    const isThisPostLiking = likingPostId === post._id;
+    const isThisPostDeleting = deletingPostId === post._id;
 
     const handleDelete = () => {
         Alert.alert(
@@ -38,8 +43,16 @@ const PostCard = ({ post, onLike, onDelete, onComment, isLiked, currentUser }: P
                             <Text className='text-gray-500 ml-1'>@{post.user.username} · {formatDate(post.createdAt)}</Text>
                         </View>
                         {isOwnPost && (
-                            <TouchableOpacity onPress={handleDelete}>
-                                <Feather name='trash-2' size={20} color='red' />
+                            <TouchableOpacity
+                                onPress={handleDelete}
+                                className='flex-shrink-0 ml-2'
+                                disabled={isThisPostDeleting} 
+                            >
+                                {isThisPostDeleting ? ( 
+                                    <ActivityIndicator size="small" color="red" />
+                                ) : (
+                                    <Feather name='trash-2' size={20} color='red' />
+                                )}
                             </TouchableOpacity>
                         )}
                     </View>
@@ -64,8 +77,10 @@ const PostCard = ({ post, onLike, onDelete, onComment, isLiked, currentUser }: P
                             <Text className="text-gray-500 text-sm ml-2">0</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity className="flex-row items-center" onPress={() => onLike(post._id)}>
-                            {isLiked ? (
+                        <TouchableOpacity className="flex-row items-center" onPress={() => onLike(post._id)} disabled={isThisPostLiking}>
+                            {isThisPostLiking ? (
+                                <ActivityIndicator size="small" color={isLiked ? "#E0245E" : "#657786"} />
+                            ) : isLiked ? (
                                 <AntDesign name="heart" size={18} color="#E0245E" />
                             ) : (
                                 <Feather name="heart" size={18} color="#657786" />
