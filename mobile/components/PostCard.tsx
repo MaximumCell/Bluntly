@@ -34,7 +34,7 @@ const PostCard = ({ post, onLike, onDelete, onComment, isLiked, currentUser }: P
                 <View className='flex-1'>
                     <View className='flex-row items-center justify-between mb-2'>
                         <View className='flex-row items-center'>
-                            <Text className='font-bold text-gray-900 mr-1'>{post.user.firstName} {post.user.lastName}</Text>
+                            <Text className='font-bold text-gray-900 mr-1'>{post.user.firstName}</Text>
                             <Text className='text-gray-500 ml-1'>@{post.user.username} · {formatDate(post.createdAt)}</Text>
                         </View>
                         {isOwnPost && (

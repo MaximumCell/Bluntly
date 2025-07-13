@@ -113,7 +113,7 @@ export const likePost = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error("Post not found");
     }
-    const user = await User.findOne({clearId: userId});
+    const user = await User.findOne({clerkId: userId});
     if (!user) {
         res.status(404);
         throw new Error("User not found");
@@ -149,7 +149,7 @@ export const deletePost = asyncHandler(async (req, res) => {
     const { userId } = getAuth(req);
 
     const post = await Post.findById(postId);
-    const user = await User.findOne({clearId: userId});
+    const user = await User.findOne({clerkId: userId});
     if (!user || !post) {
         res.status(404);
         throw new Error("Post or user not found");
