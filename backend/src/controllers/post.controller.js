@@ -9,12 +9,12 @@ import Comment from "../models/comment.model.js";
 export const getPosts = asyncHandler(async (req, res) => {
     const posts = await Post.find()
     .sort({ createdAt: -1 })
-    .populate("user", "username firstName lastName profileImage")
+    .populate("user", "username firstName lastName profilePicture")
     .populate({
         path: "comments",
         populate: {
             path: "user",
-            select: "username firstName lastName profileImage"
+            select: "username firstName lastName profilePicture"
         }
     });
     res.status(200).json({ posts });
@@ -23,12 +23,12 @@ export const getPosts = asyncHandler(async (req, res) => {
 export const getPost = asyncHandler(async (req, res) => {
     const { postId } = req.params;
     const post = await Post.findById(postId)
-    .populate("user", "username firstName lastName profileImage")
+    .populate("user", "username firstName lastName profilePicture")
     .populate({
         path: "comments",
         populate: {
             path: "user",
-            select: "username firstName lastName profileImage"
+            select: "username firstName lastName profilePicture"
         }
     });
     if (!post) {
@@ -47,12 +47,12 @@ export const getUserPosts = asyncHandler(async (req, res) => {
     }
     const posts = await Post.find({ user: user._id })
     .sort({ createdAt: -1 })
-    .populate("user", "username firstName lastName profileImage")
+    .populate("user", "username firstName lastName profilePicture")
     .populate({
         path: "comments",
         populate: {
             path: "user",
-            select: "username firstName lastName profileImage"
+            select: "username firstName lastName profilePicture"
         }
     });
     res.status(200).json({ posts });
