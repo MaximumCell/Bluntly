@@ -42,3 +42,8 @@ export const commentsApi = {
     getComments: (api: AxiosInstance, postId: string) => api.get(`/comments/post/${postId}`),
     deleteComment: (api: AxiosInstance, commentId: string) => api.delete(`/comments/${commentId}`),
 }
+
+export const notificationsApi = {
+    getNotifications: (api: AxiosInstance) => api.get('/notifications'),
+    deleteNotification: (api: AxiosInstance, notificationId: string) => api.delete(`/notifications/${notificationId}`),
+}
