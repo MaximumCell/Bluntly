@@ -35,7 +35,7 @@ export const syncUser = asyncHandler(async (req, res) => {
         firstName: clerkUser.firstName || "",
         lastName: clerkUser.lastName || "",
         username: clerkUser.emailAddresses[0]?.emailAddress.split("@")[0] || "",
-        profileImageUrl: clerkUser.profileImageUrl || "",
+        profilePicture: clerkUser.imageUrl || "",
     };
     const user = await User.create(userData);
     
