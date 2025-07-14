@@ -92,11 +92,15 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
 
                   <Text className="text-gray-900 text-base leading-5 mb-2">{comment.content}</Text>
                 </View>
-              <View >
-                <TouchableOpacity onPress={() => deleteComment(comment._id)}>
-                <Feather name="trash-2" size={20} color="red" />
-              </TouchableOpacity>
-              </View>
+
+                {/* Only show delete button if current user is the comment owner */}
+                {currentUser._id === comment.user._id && (
+                  <View>
+                    <TouchableOpacity onPress={() => deleteComment(comment._id)}>
+                      <Feather name="trash-2" size={20} color="red" />
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             </View>
           ))}
@@ -122,9 +126,8 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                 />
 
                 <TouchableOpacity
-                  className={`px-4 py-2 rounded-lg self-start ${
-                    comments.trim() ? "bg-blue-500" : "bg-gray-300"
-                  }`}
+                  className={`px-4 py-2 rounded-lg self-start ${comments.trim() ? "bg-blue-500" : "bg-gray-300"
+                    }`}
                   onPress={() => createComment(selectedPost._id)}
                   disabled={isCreatingComment || !comments.trim()}
                 >
@@ -132,9 +135,8 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                     <ActivityIndicator size={"small"} color={"white"} />
                   ) : (
                     <Text
-                      className={`font-semibold ${
-                        comments.trim() ? "text-white" : "text-gray-500"
-                      }`}
+                      className={`font-semibold ${comments.trim() ? "text-white" : "text-gray-500"
+                        }`}
                     >
                       Reply
                     </Text>

@@ -1,16 +1,18 @@
-import { useSSO } from "@clerk/clerk-expo";
+import { useOAuth } from "@clerk/clerk-expo";
 import { useState } from "react";
 import { Alert } from "react-native";
 
-
 export const useSocialAuth = () => {
     const [isLoading, setIsLoading] = useState(false);
-    const { startSSOFlow } = useSSO();
+    const { startOAuthFlow: startGoogleOAuth } = useOAuth({ strategy: "oauth_google" });
+    const { startOAuthFlow: startGitHubOAuth } = useOAuth({ strategy: "oauth_github" });
 
     const handleSocialAuth = async (strategy: "oauth_google" | "oauth_github") => {
         setIsLoading(true);
         try {
-            const { createdSessionId, setActive } = await startSSOFlow({ strategy });
+            const startOAuthFlow = strategy === "oauth_google" ? startGoogleOAuth : startGitHubOAuth;
+            const { createdSessionId, setActive } = await startOAuthFlow();
+
             if (createdSessionId && setActive) {
                 await setActive({ session: createdSessionId });
             } else {
