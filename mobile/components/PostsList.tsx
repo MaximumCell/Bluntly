@@ -6,9 +6,9 @@ import { Post } from '@/types';
 import PostCard from './PostCard';
 import CommentsModal from './CommentsModal';
 
-const PostsList = () => {
+const PostsList = ({ username }: { username?: string }) => {
     const { currentUser } = useCurrentUser();
-    const { posts, isLoading, error, refetch, toggleLike, deletePost, checkIsLiked, likingPostId, deletingPostId } = usePosts();
+    const { posts, isLoading, error, refetch, toggleLike, deletePost, checkIsLiked, likingPostId, deletingPostId } = usePosts(username);
     const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
     const selectedPost = selectedPostId ? posts.find((post:Post) => post._id === selectedPostId) : null;
     if (isLoading) {
