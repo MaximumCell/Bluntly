@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApiClient, postsApi } from "@/utils/api";
 import { useState } from "react";
 
-export const usePosts = () => {
+export const usePosts = (username?: string) => {
     const api = useApiClient();
 
     const queryClient = useQueryClient();
@@ -11,8 +11,8 @@ export const usePosts = () => {
     const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
 
     const { data: postData, isLoading, error, refetch } = useQuery({
-        queryKey: ["posts"],
-        queryFn: () => postsApi.getPosts(api),
+        queryKey: username ? ["userPosts", username] : ["posts"],
+        queryFn: () => (username ? postsApi.getUserPosts(api, username) : postsApi.getPosts(api)),
         select: (response) => response.data.posts,
     });
 
@@ -23,6 +23,9 @@ export const usePosts = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["posts"] });
+            if (username) {
+                queryClient.invalidateQueries({ queryKey: ["userPosts", username] });
+            }
             setLikingPostId(null);
         },
     });
@@ -34,7 +37,9 @@ export const usePosts = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["posts"] });
-            queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+            if (username) {
+                queryClient.invalidateQueries({ queryKey: ["userPosts", username] });
+            }
             setDeletingPostId(null);
         },
     });
