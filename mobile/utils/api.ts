@@ -27,6 +27,8 @@ export const userApi = {
     syncUser: async (api: AxiosInstance) => api.post('/users/sync'),
     getCurrentUser: async (api: AxiosInstance) => api.get('/users/me'),
     updateProfile: async (api: AxiosInstance, data: any) => api.put('/users/profile', data),
+    followUser: async (api: AxiosInstance, userId: string) => api.post(`/users/follow/${userId}`),
+    getUserByUsername: async (api: AxiosInstance, username: string) => api.get(`/users/profile/${username}`),
 }
 
 export const postsApi = {
