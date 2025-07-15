@@ -53,8 +53,9 @@
       "prefixes": ["mobile://", "exp://"]
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "aea9025d-a35b-4e5e-80e3-c4574715ced7"
       }
     }
   }

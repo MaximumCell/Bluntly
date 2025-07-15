@@ -42,7 +42,17 @@ const PostsList = ({ username }: { username?: string }) => {
   return (
     <>
       {posts.map((post: Post) => (
-        <PostCard key={post._id} post={post} onLike={toggleLike} onDelete={deletePost} currentUser={currentUser} isLiked={checkIsLiked(post.likes, currentUser)} onComment={(post: Post) => setSelectedPostId(post._id)} likingPostId={likingPostId} deletingPostId={deletingPostId} />
+        <PostCard 
+        key={post._id} 
+        post={post} 
+        onLike={toggleLike} 
+        onDelete={deletePost} 
+        currentUser={currentUser} 
+        isLiked={checkIsLiked(post.likes, currentUser)} 
+        onComment={(post: Post) => setSelectedPostId(post._id)} 
+        likingPostId={likingPostId} 
+        deletingPostId={deletingPostId}
+        />
       ))}
 
       <CommentsModal selectedPost={selectedPost} onClose={() => setSelectedPostId(null)} />
