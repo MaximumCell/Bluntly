@@ -16,7 +16,7 @@ const UserProfile = ({ username }: { username: string }) => {
   const { posts, refetch: refetchPosts, isLoading: isRefetching } = usePosts(user?.username);
   const { toggleFollow, isPending } = useFollow();
 
-  console.log("User Profile:", user, "Current User:", currentUser);
+  // console.log("User Profile:", user, "Current User:", currentUser);
 
   const [isFollowing, setIsFollowing] = useState(false);
 
@@ -33,8 +33,8 @@ const UserProfile = ({ username }: { username: string }) => {
       return;
     }
 
-    console.log("Attempting to follow/unfollow user:", user.clerkId);
-    console.log("Current follow state:", isFollowing);
+    // console.log("Attempting to follow/unfollow user:", user.clerkId);
+    // console.log("Current follow state:", isFollowing);
 
     toggleFollow(user._id, {
       onSuccess: () => {
