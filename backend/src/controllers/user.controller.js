@@ -5,64 +5,68 @@ import { clerkClient, getAuth } from "@clerk/express";
 import { Message } from "../models/message.model.js";
 
 export const getUserProfile = asyncHandler(async (req, res) => {
-    const { username } = req.params;
-    const user = await User.findOne({ username });
-    if (!user) {
-        return res.status(404).json({ message: "User not found" });
-    }
-    res.status(200).json({ user });
+  const { username } = req.params;
+  const user = await User.findOne({ username });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  res.status(200).json({ user });
 });
 
 export const updateUserProfile = asyncHandler(async (req, res) => {
-    const { userId } = getAuth(req);
-    const user = await User.findOneAndUpdate({ clerkId: userId }, req.body, { new: true });
-    if (!user) {
-        return res.status(404).json({ message: "User not found" });
-    }
-    res.status(200).json({ user });
+  const { userId } = getAuth(req);
+  const user = await User.findOneAndUpdate({ clerkId: userId }, req.body, {
+    new: true,
+  });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  res.status(200).json({ user });
 });
 
 export const syncUser = asyncHandler(async (req, res) => {
-    const { userId } = getAuth(req);
-    const existingUser = await User.findOne({ clerkId: userId });
-    if (existingUser) {
-        return res.status(200).json({ user: existingUser });
-    }
+  const { userId } = getAuth(req);
+  const existingUser = await User.findOne({ clerkId: userId });
+  if (existingUser) {
+    return res.status(200).json({ user: existingUser });
+  }
 
-    const clerkUser = await clerkClient.users.getUser(userId);
-    const userData = {
-        clerkId: userId,
-        email: clerkUser.emailAddresses[0]?.emailAddress,
-        firstName: clerkUser.firstName || "",
-        lastName: clerkUser.lastName || "",
-        username: clerkUser.emailAddresses[0]?.emailAddress.split("@")[0] || "",
-        profilePicture: clerkUser.imageUrl || "",
-    };
-    const user = await User.create(userData);
-    
-    res.status(201).json({ user, message: "User synced successfully" });
+  const clerkUser = await clerkClient.users.getUser(userId);
+  const userData = {
+    clerkId: userId,
+    email: clerkUser.emailAddresses[0]?.emailAddress,
+    firstName: clerkUser.firstName || "",
+    lastName: clerkUser.lastName || "",
+    username: clerkUser.emailAddresses[0]?.emailAddress.split("@")[0] || "",
+    profilePicture: clerkUser.imageUrl || "",
+  };
+  const user = await User.create(userData);
+
+  res.status(201).json({ user, message: "User synced successfully" });
 });
 
 export const getCurrentUser = asyncHandler(async (req, res) => {
-    const { userId } = getAuth(req);
-    const user = await User.findOne({ clerkId: userId });
+  const { userId } = getAuth(req);
+  const user = await User.findOne({ clerkId: userId });
 
-    if (!user) {
-        return res.status(404).json({ message: "User not found" });
-    }
-    res.status(200).json({ user });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  res.status(200).json({ user });
 });
 
 export const followUser = asyncHandler(async (req, res) => {
   const { userId } = getAuth(req);
   const { targetUserId } = req.params;
 
-  if (userId === targetUserId) return res.status(400).json({ error: "You cannot follow yourself" });
+  if (userId === targetUserId)
+    return res.status(400).json({ error: "You cannot follow yourself" });
 
   const currentUser = await User.findOne({ clerkId: userId });
   const targetUser = await User.findById(targetUserId);
 
-  if (!currentUser || !targetUser) return res.status(404).json({ error: "User not found" });
+  if (!currentUser || !targetUser)
+    return res.status(404).json({ error: "User not found" });
 
   const isFollowing = currentUser.following.includes(targetUserId);
 
@@ -92,10 +96,11 @@ export const followUser = asyncHandler(async (req, res) => {
   }
 
   res.status(200).json({
-    message: isFollowing ? "User unfollowed successfully" : "User followed successfully",
+    message: isFollowing
+      ? "User unfollowed successfully"
+      : "User followed successfully",
   });
 });
-
 
 export const getMessages = async (req, res, next) => {
   try {
@@ -117,31 +122,31 @@ export const getMessages = async (req, res, next) => {
 
 export const searchUsers = asyncHandler(async (req, res) => {
   const { q } = req.query;
-  
+
   if (!q || q.trim().length === 0) {
     return res.status(400).json({ error: "Search query is required" });
   }
 
-  const searchRegex = new RegExp(q.trim(), 'i');
-  
+  const searchRegex = new RegExp(q.trim(), "i");
+
   const users = await User.find({
     $or: [
       { username: searchRegex },
       { firstName: searchRegex },
       { lastName: searchRegex },
-      { email: searchRegex }
-    ]
+      { email: searchRegex },
+    ],
   })
-  .select('username firstName lastName profilePicture verified')
-  .limit(20);
+    .select("username firstName lastName profilePicture verified")
+    .limit(20);
 
   // Format users for response
-  const formattedUsers = users.map(user => ({
+  const formattedUsers = users.map((user) => ({
     _id: user._id,
     username: user.username,
     name: `${user.firstName} ${user.lastName}`.trim(),
     avatar: user.profilePicture,
-    verified: user.verified || false
+    verified: user.verified || false,
   }));
 
   res.status(200).json({ users: formattedUsers });

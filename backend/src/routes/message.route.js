@@ -14,14 +14,11 @@ router.get("/conversations", requireAuth, async (req, res) => {
     const messages = await Message.aggregate([
       {
         $match: {
-          $or: [
-            { senderId: currentUserId },
-            { receiverId: currentUserId }
-          ]
-        }
+          $or: [{ senderId: currentUserId }, { receiverId: currentUserId }],
+        },
       },
       {
-        $sort: { createdAt: -1 }
+        $sort: { createdAt: -1 },
       },
       {
         $group: {
@@ -29,8 +26,8 @@ router.get("/conversations", requireAuth, async (req, res) => {
             $cond: [
               { $eq: ["$senderId", currentUserId] },
               "$receiverId",
-              "$senderId"
-            ]
+              "$senderId",
+            ],
           },
           lastMessage: { $first: "$$ROOT" },
           unreadCount: {
@@ -39,31 +36,33 @@ router.get("/conversations", requireAuth, async (req, res) => {
                 {
                   $and: [
                     { $eq: ["$receiverId", currentUserId] },
-                    { $eq: ["$read", false] }
-                  ]
+                    { $eq: ["$read", false] },
+                  ],
                 },
                 1,
-                0
-              ]
-            }
-          }
-        }
+                0,
+              ],
+            },
+          },
+        },
       },
       {
-        $sort: { "lastMessage.createdAt": -1 }
-      }
+        $sort: { "lastMessage.createdAt": -1 },
+      },
     ]);
 
     // Populate user information
     const conversations = await Promise.all(
       messages.map(async (msg) => {
-        const user = await User.findById(msg._id).select("username name avatar verified");
+        const user = await User.findById(msg._id).select(
+          "username name avatar verified"
+        );
         return {
           _id: msg._id,
           user,
           lastMessage: msg.lastMessage,
           unreadCount: msg.unreadCount,
-          updatedAt: msg.lastMessage.createdAt
+          updatedAt: msg.lastMessage.createdAt,
         };
       })
     );
@@ -84,12 +83,12 @@ router.get("/:userId", requireAuth, async (req, res) => {
     const messages = await Message.find({
       $or: [
         { senderId: currentUserId, receiverId: userId },
-        { senderId: userId, receiverId: currentUserId }
-      ]
+        { senderId: userId, receiverId: currentUserId },
+      ],
     })
-    .sort({ createdAt: 1 })
-    .populate("senderId", "username name avatar")
-    .populate("receiverId", "username name avatar");
+      .sort({ createdAt: 1 })
+      .populate("senderId", "username name avatar")
+      .populate("receiverId", "username name avatar");
 
     // Mark messages as read
     await Message.updateMany(
@@ -111,7 +110,9 @@ router.post("/", requireAuth, async (req, res) => {
     const senderId = req.user._id;
 
     if (!receiverId || !content) {
-      return res.status(400).json({ error: "Receiver ID and content are required" });
+      return res
+        .status(400)
+        .json({ error: "Receiver ID and content are required" });
     }
 
     if (content.trim().length === 0) {
@@ -128,7 +129,7 @@ router.post("/", requireAuth, async (req, res) => {
       senderId,
       receiverId,
       content: content.trim(),
-      read: false
+      read: false,
     });
 
     const populatedMessage = await Message.findById(message._id)
@@ -152,8 +153,8 @@ router.delete("/conversation/:userId", requireAuth, async (req, res) => {
     await Message.deleteMany({
       $or: [
         { senderId: currentUserId, receiverId: userId },
-        { senderId: userId, receiverId: currentUserId }
-      ]
+        { senderId: userId, receiverId: currentUserId },
+      ],
     });
 
     res.json({ message: "Conversation deleted successfully" });

@@ -1,5 +1,13 @@
 import express from "express";
-import { followUser, getCurrentUser, getMessages, getUserProfile, syncUser, updateUserProfile, searchUsers } from "../controllers/user.controller.js";
+import {
+  followUser,
+  getCurrentUser,
+  getMessages,
+  getUserProfile,
+  syncUser,
+  updateUserProfile,
+  searchUsers,
+} from "../controllers/user.controller.js";
 import { protectRoute } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();

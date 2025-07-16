@@ -51,7 +51,7 @@ export const initializeSocket = (server) => {
           senderId,
           receiverId,
           content: content.trim(),
-          read: false
+          read: false,
         });
 
         // send to receiver in realtime, if they're online
