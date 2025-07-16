@@ -2,6 +2,7 @@ import asyncHandler from "express-async-handler";
 import User from "../models/user.model.js";
 import Notification from "../models/notification.model.js";
 import { clerkClient, getAuth } from "@clerk/express";
+import { Message } from "../models/message.model.js";
 
 export const getUserProfile = asyncHandler(async (req, res) => {
     const { username } = req.params;
@@ -94,3 +95,22 @@ export const followUser = asyncHandler(async (req, res) => {
     message: isFollowing ? "User unfollowed successfully" : "User followed successfully",
   });
 });
+
+
+export const getMessages = async (req, res, next) => {
+  try {
+    const myId = req.auth.userId;
+    const { userId } = req.params;
+
+    const messages = await Message.find({
+      $or: [
+        { senderId: userId, receiverId: myId },
+        { senderId: myId, receiverId: userId },
+      ],
+    }).sort({ createdAt: 1 });
+
+    res.status(200).json(messages);
+  } catch (error) {
+    next(error);
+  }
+};
