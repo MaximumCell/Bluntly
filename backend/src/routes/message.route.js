@@ -11,7 +11,7 @@ router.get("/conversations", protectRoute, async (req, res) => {
   try {
     const { userId } = getAuth(req);
     const currentUser = await User.findOne({ clerkId: userId });
-    
+
     if (!currentUser) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -22,14 +22,11 @@ router.get("/conversations", protectRoute, async (req, res) => {
     const messages = await Message.aggregate([
       {
         $match: {
-          $or: [
-            { senderId: currentUserId },
-            { receiverId: currentUserId }
-          ]
-        }
+          $or: [{ senderId: currentUserId }, { receiverId: currentUserId }],
+        },
       },
       {
-        $sort: { createdAt: -1 }
+        $sort: { createdAt: -1 },
       },
       {
         $group: {
@@ -37,8 +34,8 @@ router.get("/conversations", protectRoute, async (req, res) => {
             $cond: [
               { $eq: ["$senderId", currentUserId] },
               "$receiverId",
-              "$senderId"
-            ]
+              "$senderId",
+            ],
           },
           lastMessage: { $first: "$$ROOT" },
           unreadCount: {
@@ -47,34 +44,36 @@ router.get("/conversations", protectRoute, async (req, res) => {
                 {
                   $and: [
                     { $eq: ["$receiverId", currentUserId] },
-                    { $eq: ["$read", false] }
-                  ]
+                    { $eq: ["$read", false] },
+                  ],
                 },
                 1,
-                0
-              ]
-            }
-          }
-        }
+                0,
+              ],
+            },
+          },
+        },
       },
       {
-        $sort: { "lastMessage.createdAt": -1 }
-      }
+        $sort: { "lastMessage.createdAt": -1 },
+      },
     ]);
 
     // Populate user information
     const conversations = await Promise.all(
       messages.map(async (msg) => {
-        const user = await User.findById(msg._id).select("username firstName lastName profilePicture verified");
+        const user = await User.findById(msg._id).select(
+          "username firstName lastName profilePicture verified"
+        );
         return {
           _id: msg._id,
           user: {
             ...user.toObject(),
-            name: `${user.firstName} ${user.lastName}`.trim()
+            name: `${user.firstName} ${user.lastName}`.trim(),
           },
           lastMessage: msg.lastMessage,
           unreadCount: msg.unreadCount,
-          updatedAt: msg.lastMessage.createdAt
+          updatedAt: msg.lastMessage.createdAt,
         };
       })
     );
@@ -91,7 +90,7 @@ router.get("/:userId", protectRoute, async (req, res) => {
   try {
     const { userId } = getAuth(req);
     const currentUser = await User.findOne({ clerkId: userId });
-    
+
     if (!currentUser) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -102,12 +101,12 @@ router.get("/:userId", protectRoute, async (req, res) => {
     const messages = await Message.find({
       $or: [
         { senderId: currentUserId, receiverId: targetUserId },
-        { senderId: targetUserId, receiverId: currentUserId }
-      ]
+        { senderId: targetUserId, receiverId: currentUserId },
+      ],
     })
-    .sort({ createdAt: 1 })
-    .populate("senderId", "username firstName lastName profilePicture")
-    .populate("receiverId", "username firstName lastName profilePicture");
+      .sort({ createdAt: 1 })
+      .populate("senderId", "username firstName lastName profilePicture")
+      .populate("receiverId", "username firstName lastName profilePicture");
 
     // Mark messages as read
     await Message.updateMany(
@@ -127,7 +126,7 @@ router.post("/", protectRoute, async (req, res) => {
   try {
     const { receiverId, content } = req.body;
     const { userId } = getAuth(req);
-    
+
     const currentUser = await User.findOne({ clerkId: userId });
     if (!currentUser) {
       return res.status(404).json({ error: "User not found" });
@@ -136,7 +135,9 @@ router.post("/", protectRoute, async (req, res) => {
     const senderId = currentUser._id.toString();
 
     if (!receiverId || !content) {
-      return res.status(400).json({ error: "Receiver ID and content are required" });
+      return res
+        .status(400)
+        .json({ error: "Receiver ID and content are required" });
     }
 
     if (content.trim().length === 0) {
@@ -153,7 +154,7 @@ router.post("/", protectRoute, async (req, res) => {
       senderId,
       receiverId,
       content: content.trim(),
-      read: false
+      read: false,
     });
 
     const populatedMessage = await Message.findById(message._id)
@@ -172,7 +173,7 @@ router.delete("/conversation/:userId", protectRoute, async (req, res) => {
   try {
     const { userId } = getAuth(req);
     const currentUser = await User.findOne({ clerkId: userId });
-    
+
     if (!currentUser) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -184,8 +185,8 @@ router.delete("/conversation/:userId", protectRoute, async (req, res) => {
     await Message.deleteMany({
       $or: [
         { senderId: currentUserId, receiverId: targetUserId },
-        { senderId: targetUserId, receiverId: currentUserId }
-      ]
+        { senderId: targetUserId, receiverId: currentUserId },
+      ],
     });
 
     res.json({ message: "Conversation deleted successfully" });
@@ -199,30 +200,30 @@ router.delete("/conversation/:userId", protectRoute, async (req, res) => {
 router.get("/search/users", protectRoute, async (req, res) => {
   try {
     const { q } = req.query;
-    
+
     if (!q || q.trim().length === 0) {
       return res.status(400).json({ error: "Search query is required" });
     }
 
-    const searchRegex = new RegExp(q.trim(), 'i');
-    
+    const searchRegex = new RegExp(q.trim(), "i");
+
     const users = await User.find({
       $or: [
         { username: searchRegex },
         { firstName: searchRegex },
-        { lastName: searchRegex }
-      ]
+        { lastName: searchRegex },
+      ],
     })
-    .select('username firstName lastName profilePicture verified')
-    .limit(20);
+      .select("username firstName lastName profilePicture verified")
+      .limit(20);
 
     // Format users for response
-    const formattedUsers = users.map(user => ({
+    const formattedUsers = users.map((user) => ({
       _id: user._id,
       username: user.username,
       name: `${user.firstName} ${user.lastName}`.trim(),
       avatar: user.profilePicture,
-      verified: user.verified || false
+      verified: user.verified || false,
     }));
 
     res.status(200).json(formattedUsers);

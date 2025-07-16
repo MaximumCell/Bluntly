@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { useAuth } from '@clerk/clerk-expo';
 
-const API_URL = 'https://bluntly-phi.vercel.app/api'; 
+const API_URL = 'https://bluntly-phi.vercel.app/api';
 export const createApiClient = (getToken: () => Promise<string | null>): AxiosInstance => {
     const api = axios.create({
         baseURL: API_URL
@@ -48,4 +48,13 @@ export const commentsApi = {
 export const notificationsApi = {
     getNotifications: (api: AxiosInstance) => api.get('/notifications'),
     deleteNotification: (api: AxiosInstance, notificationId: string) => api.delete(`/notifications/${notificationId}`),
+}
+
+export const messagesApi = {
+    getConversations: (api: AxiosInstance) => api.get('/messages/conversations'),
+    getMessages: (api: AxiosInstance, userId: string) => api.get(`/messages/${userId}`),
+    sendMessage: (api: AxiosInstance, receiverId: string, content: string) =>
+        api.post('/messages', { receiverId, content }),
+    deleteConversation: (api: AxiosInstance, userId: string) => api.delete(`/messages/conversation/${userId}`),
+    searchUsers: (api: AxiosInstance, query: string) => api.get(`/messages/search/users?q=${encodeURIComponent(query)}`),
 }
