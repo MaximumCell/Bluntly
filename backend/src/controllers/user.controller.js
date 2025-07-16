@@ -114,3 +114,35 @@ export const getMessages = async (req, res, next) => {
     next(error);
   }
 };
+
+export const searchUsers = asyncHandler(async (req, res) => {
+  const { q } = req.query;
+  
+  if (!q || q.trim().length === 0) {
+    return res.status(400).json({ error: "Search query is required" });
+  }
+
+  const searchRegex = new RegExp(q.trim(), 'i');
+  
+  const users = await User.find({
+    $or: [
+      { username: searchRegex },
+      { firstName: searchRegex },
+      { lastName: searchRegex },
+      { email: searchRegex }
+    ]
+  })
+  .select('username firstName lastName profilePicture verified')
+  .limit(20);
+
+  // Format users for response
+  const formattedUsers = users.map(user => ({
+    _id: user._id,
+    username: user.username,
+    name: `${user.firstName} ${user.lastName}`.trim(),
+    avatar: user.profilePicture,
+    verified: user.verified || false
+  }));
+
+  res.status(200).json({ users: formattedUsers });
+});
