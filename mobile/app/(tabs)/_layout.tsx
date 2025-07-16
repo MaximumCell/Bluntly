@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { View, Dimensions, TouchableOpacity, StyleSheet } from 'react-native'
 import { Redirect } from 'expo-router'
 import { Feather } from '@expo/vector-icons'
@@ -13,7 +13,6 @@ import Animated, {
     runOnJS,
     useAnimatedReaction
 } from 'react-native-reanimated'
-import * as Haptics from 'expo-haptics'
 
 // Import your tab components
 import HomeScreen from './index'
@@ -44,40 +43,56 @@ const TabLayout = () => {
         { name: 'Profile', icon: 'user', component: ProfileScreen },
     ]
 
-    const triggerHaptics = useCallback(() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    // Initialize indicator position with smooth animation
+    useEffect(() => {
+        tabBarTranslateX.value = withSpring(currentPage * (SCREEN_WIDTH / tabs.length), {
+            damping: 20,
+            stiffness: 300,
+            mass: 0.5,
+        })
     }, [])
 
     const handlePageScroll = useCallback((e: any) => {
         const { position, offset } = e.nativeEvent
         pageOffset.value = position + offset
 
-        // Smooth tab bar indicator movement
-        tabBarTranslateX.value = (position + offset) * (SCREEN_WIDTH / tabs.length)
+        // Direct movement during scroll - no spring animation to prevent lag
+        const targetPosition = (position + offset) * (SCREEN_WIDTH / tabs.length)
+        tabBarTranslateX.value = targetPosition
     }, [])
 
     const handlePageSelected = useCallback((e: any) => {
         const newPage = e.nativeEvent.position
         if (newPage !== currentPage) {
             setCurrentPage(newPage)
-            runOnJS(triggerHaptics)()
+            // Smooth snap to final position only when page is selected
+            tabBarTranslateX.value = withSpring(newPage * (SCREEN_WIDTH / tabs.length), {
+                damping: 20,
+                stiffness: 300,
+                mass: 0.5,
+            })
         }
-    }, [currentPage, triggerHaptics])
+    }, [currentPage])
 
     const navigateToTab = useCallback((index: number) => {
         if (index !== currentPage) {
             pagerRef.current?.setPage(index)
             setCurrentPage(index)
-            triggerHaptics()
+            // Smooth animation when tapping tabs
+            tabBarTranslateX.value = withSpring(index * (SCREEN_WIDTH / tabs.length), {
+                damping: 18,
+                stiffness: 250,
+                mass: 0.4,
+            })
         }
-    }, [currentPage, triggerHaptics])
+    }, [currentPage])
 
-    // Animate tab bar indicator
+    // Animate tab bar indicator - smooth real-time movement
     const tabBarIndicatorStyle = useAnimatedStyle(() => {
         return {
             transform: [{ translateX: tabBarTranslateX.value }],
         }
-    })
+    }, [])
 
     // Animate tab icons based on page position
     const getTabIconStyle = (index: number) => {
@@ -86,13 +101,13 @@ const TabLayout = () => {
             const scale = interpolate(
                 pageOffset.value,
                 inputRange,
-                [0.8, 1, 0.8],
+                [0.85, 1, 0.85],
                 'clamp'
             )
             const opacity = interpolate(
                 pageOffset.value,
                 inputRange,
-                [0.6, 1, 0.6],
+                [0.7, 1, 0.7],
                 'clamp'
             )
 
@@ -100,7 +115,7 @@ const TabLayout = () => {
                 transform: [{ scale }],
                 opacity,
             }
-        })
+        }, [])
     }
 
     return (
@@ -114,6 +129,7 @@ const TabLayout = () => {
                 scrollEnabled={true}
                 orientation="horizontal"
                 overdrag={false}
+                offscreenPageLimit={1}
             >
                 {tabs.map((tab, index) => (
                     <View key={index} style={styles.page}>
@@ -173,10 +189,10 @@ const styles = StyleSheet.create({
     tabBarIndicator: {
         position: 'absolute',
         top: 0,
-        height: 2,
+        height: 3,
         backgroundColor: '#1DA1F2',
         width: SCREEN_WIDTH / 5, // Divide by number of tabs
-        borderRadius: 1,
+        borderRadius: 1.5,
     },
 })
 
