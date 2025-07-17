@@ -11,7 +11,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 const NotificationScreen = () => {
   const { notifications, isLoading, error, refetch, isRefetching, deleteNotification } = useNotification();
   const insets = useSafeAreaInsets();
-  console.log("Notifications:", notifications);
+  // console.log("Notifications:", notifications);
 
   if (error) {
     return (
