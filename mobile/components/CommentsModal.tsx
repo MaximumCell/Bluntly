@@ -1,8 +1,7 @@
 import { useComments } from "@/hooks/useComments";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Post } from "@/types";
-import Feather from "@expo/vector-icons/build/Feather";
-import {
+import Feather from "@expo/vector-icons/build/Feather";import {
   View,
   Text,
   Modal,
@@ -295,7 +294,6 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                   ))}
 
                   {/* ADD COMMENT INPUT */}
-
                   <View className="p-4 border-t border-gray-100">
                     <View className="flex-row">
                       <Image
@@ -335,7 +333,7 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                         </TouchableOpacity>
                       </View>
                     </View>
-                  </View>                </ScrollView>
+                  </View></ScrollView>
               )}
             </Animated.View>
           </PanGestureHandler>
