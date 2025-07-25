@@ -7,6 +7,7 @@ import messageRoutes from "./routes/message.route.js";
 import { initializeSocket } from "./utils/socket.js";
 import { Logger } from "./utils/helpers.js";
 
+
 // Load environment variables
 dotenv.config();
 
@@ -34,8 +35,10 @@ const io = initializeSocket(server);
 // Database connection
 const connectDB = async () => {
   try {
-    const MONGO_URI =
-      "mongodb+srv://alihassanwinner:I6xWT1J2GuSfJiqb@cluster0.2r1xl3t.mongodb.net/blantly_db?retryWrites=true&w=majority&appName=Cluster0";
+    const MONGO_URI = process.env.MONGO_URI;
+    if (!MONGO_URI) {
+      throw new Error("MONGO_URI environment variable is not defined");
+    }
     await mongoose.connect(MONGO_URI);
     Logger.success("MongoDB connected successfully");
   } catch (error) {
