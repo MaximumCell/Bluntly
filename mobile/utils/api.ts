@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { useAuth } from '@clerk/clerk-expo';
 
-const API_URL = 'https://bluntly-phi.vercel.app/api'; 
+const API_URL = 'https://bluntly-phi.vercel.app/api';
 export const createApiClient = (getToken: () => Promise<string | null>): AxiosInstance => {
     const api = axios.create({
         baseURL: API_URL
@@ -29,6 +29,7 @@ export const userApi = {
     updateProfile: async (api: AxiosInstance, data: any) => api.put('/users/profile', data),
     followUser: async (api: AxiosInstance, userId: string) => api.post(`/users/follow/${userId}`),
     getUserByUsername: async (api: AxiosInstance, username: string) => api.get(`/users/profile/${username}`),
+    getAllUsers: async (api: AxiosInstance) => api.get('/users'),
 }
 
 export const postsApi = {

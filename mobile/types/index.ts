@@ -6,6 +6,29 @@ export interface User {
   profilePicture?: string;
 }
 
+export interface Message {
+  _id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Conversation {
+  userId: string;
+  username: string;
+  lastMessage?: Message;
+  unreadCount?: number;
+  isOnline?: boolean;
+  activity?: string;
+}
+
+export interface SocketUser {
+  _id: string;
+  username: string;
+}
+
 export interface Comment {
   _id: string;
   content: string;

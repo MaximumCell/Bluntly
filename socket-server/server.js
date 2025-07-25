@@ -4,9 +4,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import messageRoutes from "./routes/message.route.js";
+import userRoutes from "./routes/user.routes.js";
 import { initializeSocket } from "./utils/socket.js";
 import { Logger } from "./utils/helpers.js";
-
 
 // Load environment variables
 dotenv.config();
@@ -52,6 +52,7 @@ connectDB();
 
 // Routes
 app.use("/api/messages", messageRoutes);
+app.use("/api/users", userRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
