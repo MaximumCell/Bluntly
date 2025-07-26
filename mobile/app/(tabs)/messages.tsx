@@ -89,7 +89,7 @@ const MessagesScreen = () => {
     setSelectedUser(user);
     setIsChatOpen(true);
     // Fetch real messages for this user
-    fetchMessages(user.username);
+    fetchMessages(user.id);
   };
 
   const closeChatModal = () => {
@@ -136,7 +136,9 @@ const MessagesScreen = () => {
     setMessageInput('');
     setIsTyping(false);
     updateActivity('Idle');
-  };  // Render real-time message
+  };
+
+  // Render real-time message
   const renderMessage = ({ item }: { item: Message }) => {
     const isMyMessage = item.senderId === userId;
 
@@ -283,7 +285,9 @@ const MessagesScreen = () => {
             })
           )}
         </ScrollView>
-      )}      {/* Quick Actions */}
+      )}
+
+      {/* Quick Actions */}
       <View className="px-4 py-2 border-t border-gray-100 bg-gray-50">
         <Text className="text-xs text-gray-500 text-center">
           Tap to open • Long press to delete • Online users: {onlineUsers.length}

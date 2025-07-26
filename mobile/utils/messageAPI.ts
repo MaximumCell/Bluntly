@@ -42,9 +42,9 @@ export class MessageAPIService {
     }
 
     // Get messages between current user and specific user
-    static async getMessages(userId: string) {
+    static async getMessages(senderId: string, receiverId: string) {
         try {
-            const response = await messageAPI.get(`/${userId}`);
+            const response = await messageAPI.get(`?senderId=${senderId}&receiverId=${receiverId}`);
             return {
                 success: true,
                 messages: response.data.messages || [],
@@ -60,9 +60,11 @@ export class MessageAPIService {
     }
 
     // Send message via HTTP (alternative to socket)
-    static async sendMessage(userId: string, content: string) {
+    static async sendMessage(senderId: string, receiverId: string, content: string) {
         try {
-            const response = await messageAPI.post(`/send/${userId}`, {
+            const response = await messageAPI.post('/', {
+                senderId,
+                receiverId,
                 content,
             });
             return {
