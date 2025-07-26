@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { getMessages, sendMessage } from "../controllers/message.controller.js";
+import {
+  getMessages,
+  sendMessage,
+  getAllUsers,
+} from "../controllers/message.controller.js";
 
 const router = Router();
 
@@ -8,5 +12,8 @@ router.get("/", getMessages);
 
 // POST /api/messages - Send a message
 router.post("/", sendMessage);
+
+// GET /api/messages/users?currentUserId=xxx - Get all users that have message history with current user
+router.get("/users", getAllUsers);
 
 export default router;

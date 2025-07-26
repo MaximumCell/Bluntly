@@ -1,6 +1,10 @@
 import { Message } from "../models/message.model.js";
 import mongoose from "mongoose";
 
+import { Message } from "../models/message.model.js";
+import User from "../models/user.model.js";
+import mongoose from "mongoose";
+
 export const getMessages = async (req, res, next) => {
   try {
     const { senderId, receiverId } = req.query;
@@ -13,12 +17,26 @@ export const getMessages = async (req, res, next) => {
       });
     }
 
+    // Validate ObjectIds
+    if (
+      !mongoose.Types.ObjectId.isValid(senderId) ||
+      !mongoose.Types.ObjectId.isValid(receiverId)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user IDs provided",
+      });
+    }
+
     const messages = await Message.find({
       $or: [
         { senderId: senderId, receiverId: receiverId },
         { senderId: receiverId, receiverId: senderId },
       ],
-    }).sort({ createdAt: 1 });
+    })
+      .populate("senderId", "username firstName lastName profilePicture")
+      .populate("receiverId", "username firstName lastName profilePicture")
+      .sort({ createdAt: 1 });
 
     res.status(200).json({
       success: true,
@@ -44,17 +62,46 @@ export const sendMessage = async (req, res, next) => {
       });
     }
 
+    // Validate ObjectIds
+    if (
+      !mongoose.Types.ObjectId.isValid(senderId) ||
+      !mongoose.Types.ObjectId.isValid(receiverId)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user IDs provided",
+      });
+    }
+
+    // Verify users exist
+    const [senderExists, receiverExists] = await Promise.all([
+      User.findById(senderId),
+      User.findById(receiverId),
+    ]);
+
+    if (!senderExists || !receiverExists) {
+      return res.status(404).json({
+        success: false,
+        message: "One or both users not found",
+      });
+    }
+
     const newMessage = new Message({
       senderId,
       receiverId,
-      content,
+      content: content.trim(),
     });
 
     await newMessage.save();
 
+    // Populate the message with user details
+    const populatedMessage = await Message.findById(newMessage._id)
+      .populate("senderId", "username firstName lastName profilePicture")
+      .populate("receiverId", "username firstName lastName profilePicture");
+
     res.status(201).json({
       success: true,
-      message: newMessage,
+      message: populatedMessage,
     });
   } catch (error) {
     console.error("Error sending message:", error);
@@ -67,24 +114,44 @@ export const sendMessage = async (req, res, next) => {
 
 export const getAllUsers = async (req, res, next) => {
   try {
-    const currentUserId = req.auth.userId;
+    const currentUserId = req.query.currentUserId;
+
+    if (!currentUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "currentUserId is required as query parameter",
+      });
+    }
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(currentUserId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid current user ID provided",
+      });
+    }
 
     // Get all unique users who have exchanged messages with current user
     const messages = await Message.find({
       $or: [{ senderId: currentUserId }, { receiverId: currentUserId }],
-    }).distinct("senderId receiverId");
+    });
 
-    // Get unique user IDs (excluding current user)
-    const userIds = [...new Set(messages.flat())].filter(
-      (id) => id !== currentUserId
-    );
+    // Extract unique user IDs (excluding current user)
+    const userIds = new Set();
+    messages.forEach((message) => {
+      if (message.senderId.toString() !== currentUserId) {
+        userIds.add(message.senderId.toString());
+      }
+      if (message.receiverId.toString() !== currentUserId) {
+        userIds.add(message.receiverId.toString());
+      }
+    });
 
-    // For now, return user IDs. In a real app, you'd fetch user details from User collection
-    const users = userIds.map((id) => ({
-      _id: id,
-      username: `User_${id}`, // Placeholder
-      // You can fetch actual user details from your User collection here
-    }));
+    // Fetch user details
+    const users = await User.find(
+      { _id: { $in: Array.from(userIds) } },
+      { password: 0, clerkId: 0 }
+    ).select("_id username firstName lastName profilePicture");
 
     res.status(200).json({
       success: true,
