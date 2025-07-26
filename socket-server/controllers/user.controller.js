@@ -1,4 +1,4 @@
-import User from '../../backend/src/models/user.model.js';
+import User from '../models/user.model.js';
 
 export const getAllUsers = async (req, res) => {
     try {
