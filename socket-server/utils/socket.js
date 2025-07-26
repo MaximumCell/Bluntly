@@ -49,19 +49,43 @@ export const initializeSocket = (server) => {
       try {
         const { senderId, receiverId, content } = data;
 
+        // Validate required fields
+        if (!senderId || !receiverId || !content) {
+          socket.emit(
+            "message_error",
+            "senderId, receiverId, and content are required"
+          );
+          return;
+        }
+
+        // Validate ObjectIds (assuming they are MongoDB ObjectIds)
+        const mongoose = await import("mongoose");
+        if (
+          !mongoose.default.Types.ObjectId.isValid(senderId) ||
+          !mongoose.default.Types.ObjectId.isValid(receiverId)
+        ) {
+          socket.emit("message_error", "Invalid user IDs provided");
+          return;
+        }
+
         const message = await Message.create({
           senderId,
           receiverId,
-          content,
+          content: content.trim(),
         });
+
+        // Populate the message with user details
+        const populatedMessage = await Message.findById(message._id)
+          .populate("senderId", "username firstName lastName profilePicture")
+          .populate("receiverId", "username firstName lastName profilePicture");
 
         // send to receiver in realtime, if they're online
         const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
-          io.to(receiverSocketId).emit("receive_message", message);
+          io.to(receiverSocketId).emit("receive_message", populatedMessage);
         }
 
-        socket.emit("message_sent", message);
+        socket.emit("message_sent", populatedMessage);
         Logger.success(`💬 Message sent from ${senderId} to ${receiverId}`);
       } catch (error) {
         Logger.error("Message error:", error);
