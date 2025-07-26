@@ -19,7 +19,10 @@ const corsOptions = {
   origin: [
     "http://localhost:3000",
     "http://localhost:8081",
+    "http://localhost:19006", // Expo web
     "exp://192.168.1.100:8081", // Expo development
+    "exp://localhost:8081", // Expo localhost
+    "*", // Allow all origins for now
     process.env.FRONTEND_URL || "*",
   ],
   methods: ["GET", "POST"],
@@ -53,6 +56,15 @@ connectDB();
 // Routes
 app.use("/api/messages", messageRoutes);
 app.use("/api/users", userRoutes);
+
+// Root route
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Bluntly Socket Server",
+    status: "running",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // Health check endpoint
 app.get("/health", (req, res) => {
