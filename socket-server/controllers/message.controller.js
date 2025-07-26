@@ -3,13 +3,20 @@ import mongoose from "mongoose";
 
 export const getMessages = async (req, res, next) => {
   try {
-    const myId = req.auth.userId;
-    const { userId } = req.params;
+    const { senderId, receiverId } = req.query;
+
+    if (!senderId || !receiverId) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Both senderId and receiverId are required as query parameters",
+      });
+    }
 
     const messages = await Message.find({
       $or: [
-        { senderId: userId, receiverId: myId },
-        { senderId: myId, receiverId: userId },
+        { senderId: senderId, receiverId: receiverId },
+        { senderId: receiverId, receiverId: senderId },
       ],
     }).sort({ createdAt: 1 });
 
@@ -28,14 +35,12 @@ export const getMessages = async (req, res, next) => {
 
 export const sendMessage = async (req, res, next) => {
   try {
-    const senderId = req.auth.userId;
-    const { userId: receiverId } = req.params;
-    const { content } = req.body;
+    const { senderId, receiverId, content } = req.body;
 
-    if (!content) {
+    if (!senderId || !receiverId || !content) {
       return res.status(400).json({
         success: false,
-        message: "Message content is required",
+        message: "senderId, receiverId, and content are required",
       });
     }
 

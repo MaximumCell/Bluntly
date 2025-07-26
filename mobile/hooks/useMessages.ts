@@ -105,11 +105,16 @@ export const useMessages = () => {
 
     // Fetch messages with specific user
     const fetchMessages = useCallback(async (userId: string) => {
+        if (!user?.id) {
+            setError('User not authenticated');
+            return;
+        }
+
         setLoading(true);
         setError(null);
 
         try {
-            const result = await MessageAPIService.getMessages(userId);
+            const result = await MessageAPIService.getMessages(user.id, userId);
             if (result.success) {
                 setMessages(result.messages);
             } else {
@@ -120,7 +125,7 @@ export const useMessages = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user?.id]);
 
     // Send message via socket (real-time)
     const sendMessage = useCallback((receiverId: string, content: string) => {
@@ -134,6 +139,11 @@ export const useMessages = () => {
 
     // Send message via HTTP API (fallback)
     const sendMessageHTTP = useCallback(async (receiverId: string, content: string) => {
+        if (!user?.id) {
+            setError('User not authenticated');
+            return { success: false };
+        }
+
         if (!content.trim()) {
             setError('Message content cannot be empty');
             return { success: false };
@@ -143,7 +153,7 @@ export const useMessages = () => {
         setError(null);
 
         try {
-            const result = await MessageAPIService.sendMessage(receiverId, content.trim());
+            const result = await MessageAPIService.sendMessage(user.id, receiverId, content.trim());
             if (result.success && result.message) {
                 setMessages(prev => [...prev, result.message]);
             } else {
@@ -156,7 +166,7 @@ export const useMessages = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user?.id]);
 
     // Update user activity
     const updateActivity = useCallback((activity: string) => {
