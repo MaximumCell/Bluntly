@@ -5,7 +5,6 @@ import "../global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import ErrorBoundary from '@/components/ErrorBoundary';
 
 const queryClient = new QueryClient();
 export default function RootLayout() {
@@ -18,25 +17,23 @@ export default function RootLayout() {
   }
 
   return (
-    <ErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <ClerkProvider
-          publishableKey={publishableKey}
-          tokenCache={tokenCache}
-        >
-          <QueryClientProvider client={queryClient}>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="chat" />
-              <Stack.Screen name="userProfile" />
-              <Stack.Screen name="myProfile" />
-            </Stack>
-            <StatusBar style='dark' />
-          </QueryClientProvider>
-        </ClerkProvider>
-      </GestureHandlerRootView>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ClerkProvider
+        publishableKey={publishableKey}
+        tokenCache={tokenCache}
+      >
+        <QueryClientProvider client={queryClient}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="chat" />
+            <Stack.Screen name="userProfile" />
+            <Stack.Screen name="myProfile" />
+          </Stack>
+          <StatusBar style='dark' />
+        </QueryClientProvider>
+      </ClerkProvider>
+    </GestureHandlerRootView>
   );
 }
