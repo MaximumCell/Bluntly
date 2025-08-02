@@ -19,7 +19,14 @@ export const createApiClient = (getToken: () => Promise<string | null>): AxiosIn
 };
 
 export const useApiClient = (): AxiosInstance => {
-    const { getToken } = useAuth();
+    const { getToken, isLoaded } = useAuth();
+
+    // Don't create API client until auth is loaded
+    if (!isLoaded) {
+        // Return a dummy client during loading to maintain hook consistency
+        return createApiClient(() => Promise.resolve(null));
+    }
+
     return createApiClient(getToken);
 }
 

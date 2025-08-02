@@ -1,11 +1,17 @@
 import { useSignOut } from "@/hooks/useSignOut";
 import { Feather } from "@expo/vector-icons";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, ActivityIndicator } from "react-native";
+
 const SignOutButton = () => {
-  const { handleSignOut } = useSignOut();
+  const { handleSignOut, isSigningOut } = useSignOut();
+
   return (
-    <TouchableOpacity onPress={handleSignOut}>
-      <Feather name="log-out" size={24} color={"#E0245E"} />
+    <TouchableOpacity onPress={handleSignOut} disabled={isSigningOut}>
+      {isSigningOut ? (
+        <ActivityIndicator size="small" color="#E0245E" />
+      ) : (
+        <Feather name="log-out" size={24} color={"#E0245E"} />
+      )}
     </TouchableOpacity>
   );
 };

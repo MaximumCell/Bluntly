@@ -25,16 +25,23 @@ import ProfileScreen from './profile'
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
 const TabLayout = () => {
+    const { isSignedIn, isLoaded } = useAuth()
+
+    // Wait for auth to load before making decisions
+    if (!isLoaded) {
+        return null; // or a loading screen
+    }
+
+    // Check authentication BEFORE declaring other hooks
+    if (!isSignedIn) {
+        return <Redirect href="/(auth)" />
+    }
+
     const insets = useSafeAreaInsets()
     const [currentPage, setCurrentPage] = useState(0)
     const pagerRef = useRef<PagerView>(null)
     const pageOffset = useSharedValue(0)
     const tabBarTranslateX = useSharedValue(0)
-
-    const { isSignedIn } = useAuth()
-    if (!isSignedIn) {
-        return <Redirect href="/(auth)" />
-    }
 
     const tabs = [
         { name: 'Home', icon: 'home', component: HomeScreen },
