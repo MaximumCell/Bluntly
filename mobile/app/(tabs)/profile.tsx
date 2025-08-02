@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const ProfileScreen = () => {
+  // ALL hooks must be called first
   const { currentUser, isLoading } = useCurrentUser();
   const {
     posts: userPosts,
@@ -17,7 +18,7 @@ const ProfileScreen = () => {
     isLoading: isRefetching,
   } = usePosts(currentUser?.username);
 
-   const {
+  const {
     isEditModalVisible,
     openEditModal,
     closeEditModal,
@@ -29,6 +30,8 @@ const ProfileScreen = () => {
   } = useProfile();
 
   const insets = useSafeAreaInsets();
+
+  // Early returns come AFTER all hooks
   if (isLoading) {
     return (
       <View className="flex-1 bg-white items-center justify-center">

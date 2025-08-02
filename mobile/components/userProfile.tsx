@@ -5,14 +5,15 @@ import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { useFollow, useProfile } from '@/hooks/useFollow';
+import { useFollow, useUserProfile } from '@/hooks/useFollow';
 import { usePosts } from '@/hooks/usePosts';
 import PostsList from '@/components/PostsList';
 
 const UserProfile = ({ username }: { username: string }) => {
+  // ALL hooks must be called first, before any conditional logic
   const insets = useSafeAreaInsets();
   const { currentUser, isLoading: loadingCurrentUser } = useCurrentUser();
-  const { user, isLoading, refetch: refetchProfile } = useProfile(username);
+  const { user, isLoading, refetch: refetchProfile } = useUserProfile(username);
   const { posts, refetch: refetchPosts, isLoading: isRefetching } = usePosts(user?.username);
   const { toggleFollow, isPending } = useFollow();
 
@@ -48,6 +49,7 @@ const UserProfile = ({ username }: { username: string }) => {
     });
   };
 
+  // Early returns come AFTER all hooks
   if (loadingCurrentUser || isLoading || !user) {
     return (
       <View className="flex-1 bg-white items-center justify-center">

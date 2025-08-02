@@ -6,13 +6,16 @@ import Feather from '@expo/vector-icons/build/Feather';
 import { ActivityIndicator, RefreshControl } from 'react-native';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import React from 'react';
 
 
 const NotificationScreen = () => {
+  // ALL hooks must be called first
   const { notifications, isLoading, error, refetch, isRefetching, deleteNotification } = useNotification();
   const insets = useSafeAreaInsets();
   // console.log("Notifications:", notifications);
 
+  // Early returns come AFTER all hooks
   if (error) {
     return (
       <View className="flex-1 items-center justify-center p-8">

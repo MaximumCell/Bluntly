@@ -1,7 +1,6 @@
 import { View, Text, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Image } from 'react-native';
 import { AntDesign, Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
 
 import { Post, User } from '@/types';
@@ -33,7 +32,6 @@ const PostCard = ({
     const isThisPostLiking = likingPostId === post._id;
     const isThisPostDeleting = deletingPostId === post._id;
 
-    const navigation = useNavigation();
     const { currentUser: authUser } = useCurrentUser();
 
     const handleDelete = () => {
@@ -45,8 +43,8 @@ const PostCard = ({
 
     const handleProfilePress = () => {
         if (post.user._id === authUser?._id) {
-            // Navigate to current user's profile tab
-            router.push("/(tabs)/profile");
+            // For current user, navigate to their own profile screen
+            router.push("/myProfile");
         } else {
             // Navigate to user profile screen with userId param
             router.push({
