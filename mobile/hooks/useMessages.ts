@@ -55,6 +55,13 @@ export const useMessages = () => {
             console.log('✅ Current user available, connecting socket...');
             setIsConnecting(true);
 
+            // Clean up any existing listeners before setting up new ones
+            socketService.removeAllListeners('receive_message');
+            socketService.removeAllListeners('message_sent');
+            socketService.removeAllListeners('message_error');
+            socketService.removeAllListeners('users_online');
+            socketService.removeAllListeners('activity_updated');
+
             socketService.connect(currentUser._id, currentUser.username || 'Anonymous');
 
             // Setup message listeners
@@ -71,6 +78,14 @@ export const useMessages = () => {
             });
 
             return () => {
+                console.log('🧹 Cleaning up socket listeners and connection...');
+                // Clean up listeners
+                socketService.removeAllListeners('receive_message');
+                socketService.removeAllListeners('message_sent');
+                socketService.removeAllListeners('message_error');
+                socketService.removeAllListeners('users_online');
+                socketService.removeAllListeners('activity_updated');
+
                 socketService.disconnect();
                 setIsConnecting(false);
             };
@@ -82,6 +97,8 @@ export const useMessages = () => {
 
     // Setup socket event listeners
     const setupMessageListeners = useCallback(() => {
+        console.log('🔧 Setting up message listeners...');
+
         // Listen for incoming messages
         socketService.onMessageReceived((message: Message) => {
             console.log('📨 Message received:', message);
@@ -90,6 +107,7 @@ export const useMessages = () => {
             // Update last message and unread count
             const senderId = typeof message.senderId === 'object' ? message.senderId._id : message.senderId;
             if (senderId !== currentUser?._id) {
+                console.log('📨 Updating last message and unread count for:', senderId);
                 setLastMessages(prev => ({
                     ...prev,
                     [senderId]: message
@@ -135,7 +153,7 @@ export const useMessages = () => {
                 [userId]: activity,
             }));
         });
-    }, [currentUser?._id]);
+    }, [currentUser?._id]); // Add currentUser._id as dependency
 
     // Fetch all users
     const fetchUsers = useCallback(async () => {
@@ -424,6 +442,7 @@ export const useMessages = () => {
         clearMessages,
         clearError,
         markMessagesAsRead,
+        loadLastMessages,
 
         // Utilities
         isUserOnline,

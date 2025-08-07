@@ -15,6 +15,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { User } from '@/types';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 const MessagesScreen = () => {
   const { currentUser } = useCurrentUser();
@@ -32,16 +33,59 @@ const MessagesScreen = () => {
     getUnreadCount,
     getLastMessage,
     markMessagesAsRead,
+    lastMessages,
+    unreadCounts,
+    loadLastMessages,
   } = useMessages();
 
   const [searchText, setSearchText] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
 
   useEffect(() => {
     // Load all users on mount
     searchAllUsers();
   }, []); // Only run once on mount
+
+  // Listen for real-time updates to last messages and unread counts
+  useEffect(() => {
+    // This effect will trigger whenever lastMessages or unreadCounts change
+    // causing the component to re-render and show new messages automatically
+    console.log('📨 Real-time update detected - messages or unread counts updated');
+
+    // Force a re-render by updating the timestamp
+    setLastUpdateTime(Date.now());
+
+    // Update filtered users to ensure they reflect the latest data
+    if (Object.keys(lastMessages).length > 0 || Object.keys(unreadCounts).length > 0) {
+      // Update filtered users to ensure they reflect the latest data
+      const filtered = allUsers.filter(user => {
+        // Always exclude current user
+        if (user._id === currentUser?._id) return false;
+
+        if (!searchText) return true;
+        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
+        return (
+          fullName.includes(searchText.toLowerCase()) ||
+          user.username.toLowerCase().includes(searchText.toLowerCase())
+        );
+      });
+      setFilteredUsers(filtered);
+    }
+  }, [lastMessages, unreadCounts, allUsers, searchText, currentUser?._id]);
+
+  // Auto-refresh when socket connection is established
+  useEffect(() => {
+    if (isConnected && !isConnecting) {
+      console.log('🔌 Socket connected - refreshing users and messages');
+      // Automatically refresh users and last messages when socket connects
+      searchAllUsers();
+      if (allUsers.length > 0) {
+        loadLastMessages();
+      }
+    }
+  }, [isConnected, isConnecting, searchAllUsers, loadLastMessages, allUsers.length]);
 
   useEffect(() => {
     // Filter users based on search text and exclude current user
@@ -66,6 +110,16 @@ const MessagesScreen = () => {
       return () => clearTimeout(timer);
     }
   }, [error, clearError]);
+
+  // Refresh messages when screen comes into focus (e.g., coming back from chat)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('📱 Messages screen focused - refreshing last messages');
+      if (allUsers.length > 0) {
+        loadLastMessages();
+      }
+    }, [allUsers.length, loadLastMessages])
+  );
 
   const getUserDisplayName = (user: User) => {
     return user.firstName && user.lastName
@@ -92,7 +146,10 @@ const MessagesScreen = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
+      console.log('🔄 Manual refresh triggered - reloading users and messages');
       await searchAllUsers();
+      // Also reload last messages when manually refreshing
+      await loadLastMessages();
     } catch (error) {
       console.error('Error refreshing users:', error);
     } finally {
@@ -248,7 +305,7 @@ const MessagesScreen = () => {
       ) : (
         <FlatList
           data={filteredUsers}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item) => `${item._id}-${lastUpdateTime}`} // Include timestamp to force re-render
           renderItem={renderUserItem}
           className="flex-1"
           showsVerticalScrollIndicator={false}
