@@ -42,14 +42,18 @@ export const userApi = {
 export const postsApi = {
     createPost: (api: AxiosInstance, data: { content: string; image?: string }) => api.post('/posts', data),
     getPosts: (api: AxiosInstance) => api.get('/posts'),
+    getPost: (api: AxiosInstance, postId: string) => api.get(`/posts/${postId}`),
     getUserPosts: (api: AxiosInstance, username: string) => api.get(`/posts/user/${username}`),
     likePost: (api: AxiosInstance, postId: string) => api.post(`/posts/${postId}/like`),
+    dislikePost: (api: AxiosInstance, postId: string) => api.post(`/posts/${postId}/dislike`),
     deletePost: (api: AxiosInstance, postId: string) => api.delete(`/posts/${postId}`),
 }
 
 export const commentsApi = {
     createComment: (api: AxiosInstance, postId: string, content: string) => api.post(`/comments/post/${postId}`, { content }),
     getComments: (api: AxiosInstance, postId: string) => api.get(`/comments/post/${postId}`),
+    likeComment: (api: AxiosInstance, commentId: string) => api.post(`/comments/${commentId}/like`),
+    dislikeComment: (api: AxiosInstance, commentId: string) => api.post(`/comments/${commentId}/dislike`),
     deleteComment: (api: AxiosInstance, commentId: string) => api.delete(`/comments/${commentId}`),
 }
 

@@ -34,6 +34,8 @@ export interface Comment {
   content: string;
   createdAt: string;
   user: User;
+  likes: string[];
+  dislikes: string[];
 }
 
 export interface Post {
@@ -43,7 +45,9 @@ export interface Post {
   createdAt: string;
   user: User;
   likes: string[];
+  dislikes: string[];
   comments: Comment[];
+  netScore: number;
 }
 
 export interface Notification {

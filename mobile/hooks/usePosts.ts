@@ -10,6 +10,7 @@ export const usePosts = (username?: string) => {
     const queryClient = useQueryClient();
 
     const [likingPostId, setLikingPostId] = useState<string | null>(null);
+    const [dislikingPostId, setDislikingPostId] = useState<string | null>(null);
     const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
 
     const { data: postData, isLoading, error, refetch } = useQuery({
@@ -24,12 +25,44 @@ export const usePosts = (username?: string) => {
             setLikingPostId(postId);
             return postsApi.likePost(api, postId);
         },
-        onSuccess: () => {
+        onSuccess: (_, postId) => {
+            // Invalidate all posts-related queries
             queryClient.invalidateQueries({ queryKey: ["posts"] });
+            queryClient.invalidateQueries({ queryKey: ["post", postId] });
+            queryClient.invalidateQueries({ queryKey: ["post"] });
             if (username) {
                 queryClient.invalidateQueries({ queryKey: ["userPosts", username] });
             }
+            // Force refetch for all posts
+            queryClient.refetchQueries({ queryKey: ["posts"] });
             setLikingPostId(null);
+        },
+        onError: (error) => {
+            console.error("Like post error:", error);
+            setLikingPostId(null);
+        },
+    });
+
+    const dislikePostMutation = useMutation({
+        mutationFn: (postId: string) => {
+            setDislikingPostId(postId);
+            return postsApi.dislikePost(api, postId);
+        },
+        onSuccess: (_, postId) => {
+            // Invalidate all posts-related queries
+            queryClient.invalidateQueries({ queryKey: ["posts"] });
+            queryClient.invalidateQueries({ queryKey: ["post", postId] });
+            queryClient.invalidateQueries({ queryKey: ["post"] });
+            if (username) {
+                queryClient.invalidateQueries({ queryKey: ["userPosts", username] });
+            }
+            // Force refetch for all posts
+            queryClient.refetchQueries({ queryKey: ["posts"] });
+            setDislikingPostId(null);
+        },
+        onError: (error) => {
+            console.error("Dislike post error:", error);
+            setDislikingPostId(null);
         },
     });
 
@@ -52,8 +85,26 @@ export const usePosts = (username?: string) => {
         return isLike;
     }
 
+    const checkIsDisliked = (postDislikes: string[], currentUser: any) => {
+        const isDislike = currentUser && postDislikes.includes(currentUser._id);
+        return isDislike;
+    }
+
     return {
-        posts: postData || [], isLoading, error, refetch, toggleLike: (postId: string) => likePostMutation.mutate(postId), deletePost: (postId: string) => deletePostMutation.mutate(postId), checkIsLiked, isLikingPostPending: likePostMutation.isPending, isDeletingPostPending: deletePostMutation.isPending, likingPostId,
+        posts: postData || [],
+        isLoading,
+        error,
+        refetch,
+        toggleLike: (postId: string) => likePostMutation.mutate(postId),
+        toggleDislike: (postId: string) => dislikePostMutation.mutate(postId),
+        deletePost: (postId: string) => deletePostMutation.mutate(postId),
+        checkIsLiked,
+        checkIsDisliked,
+        isLikingPostPending: likePostMutation.isPending,
+        isDislikingPostPending: dislikePostMutation.isPending,
+        isDeletingPostPending: deletePostMutation.isPending,
+        likingPostId,
+        dislikingPostId,
         deletingPostId,
     };
 };

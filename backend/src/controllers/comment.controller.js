@@ -11,13 +11,7 @@ export const getComments = asyncHandler(async (req, res) => {
     .populate("user", "username firstName lastName profilePicture")
     .sort({ createdAt: -1 });
 
-  // Add net score calculation for each comment
-  const commentsWithScore = comments.map((comment) => ({
-    ...comment.toObject(),
-    netScore: comment.likes.length - comment.dislikes.length,
-  }));
-
-  res.status(200).json({ comments: commentsWithScore });
+  res.status(200).json({ comments });
 });
 
 export const createComment = asyncHandler(async (req, res) => {

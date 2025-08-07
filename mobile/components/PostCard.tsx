@@ -10,26 +10,33 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 interface PostCardProps {
     post: Post;
     onLike: (postId: string) => void;
+    onDislike?: (postId: string) => void;
     onDelete: (postId: string) => void;
     onComment: (post: Post) => void;
     isLiked?: boolean;
+    isDisliked?: boolean;
     currentUser: User;
     likingPostId?: string | null;
+    dislikingPostId?: string | null;
     deletingPostId?: string | null;
 }
 
 const PostCard = ({
     post,
     onLike,
+    onDislike,
     onDelete,
     onComment,
     isLiked,
+    isDisliked,
     currentUser,
     likingPostId,
+    dislikingPostId,
     deletingPostId,
 }: PostCardProps) => {
     const isOwnPost = currentUser && post.user._id === currentUser._id;
     const isThisPostLiking = likingPostId === post._id;
+    const isThisPostDisliking = dislikingPostId === post._id;
     const isThisPostDeleting = deletingPostId === post._id;
 
     const { currentUser: authUser } = useCurrentUser();
@@ -89,28 +96,27 @@ const PostCard = ({
                     </View>
 
                     {post.content && (
-                        <Text className='text-gray-900 text-base leading-5 mb-3'>{post.content}</Text>
+                        <TouchableOpacity onPress={() => router.navigate(`/post/${post._id}` as any)}>
+                            <Text className='text-gray-900 text-base leading-5 mb-3'>{post.content}</Text>
+                        </TouchableOpacity>
                     )}
 
                     {post.image && (
-                        <Image
-                            source={{ uri: post.image }}
-                            className='w-full h-64 rounded-lg mb-3'
-                            resizeMode='cover'
-                        />
+                        <TouchableOpacity onPress={() => router.navigate(`/post/${post._id}` as any)}>
+                            <Image
+                                source={{ uri: post.image }}
+                                className='w-full h-64 rounded-lg mb-3'
+                                resizeMode='cover'
+                            />
+                        </TouchableOpacity>
                     )}
 
-                    <View className="flex-row justify-between max-w-xs">
+                    <View className="flex-row justify-between max-w-sm">
                         <TouchableOpacity className="flex-row items-center" onPress={() => onComment(post)}>
                             <Feather name="message-circle" size={18} color="#657786" />
                             <Text className="text-gray-500 text-sm ml-2">
                                 {formatNumber(post.comments?.length || 0)}
                             </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity className="flex-row items-center">
-                            <Feather name="repeat" size={18} color="#657786" />
-                            <Text className="text-gray-500 text-sm ml-2">0</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -119,16 +125,41 @@ const PostCard = ({
                             disabled={isThisPostLiking}
                         >
                             {isThisPostLiking ? (
-                                <ActivityIndicator size="small" color={isLiked ? "#E0245E" : "#657786"} />
+                                <ActivityIndicator size="small" color={isLiked ? "#22C55E" : "#657786"} />
                             ) : isLiked ? (
-                                <AntDesign name="heart" size={18} color="#E0245E" />
+                                <Feather name="thumbs-up" size={18} color="#22C55E" />
                             ) : (
-                                <Feather name="heart" size={18} color="#657786" />
+                                <Feather name="thumbs-up" size={18} color="#657786" />
                             )}
-                            <Text className={`text-sm ml-2 ${isLiked ? "text-red-500" : "text-gray-500"}`}>
+                            <Text className={`text-sm ml-2 ${isLiked ? "text-green-500" : "text-gray-500"}`}>
                                 {formatNumber(post.likes?.length || 0)}
                             </Text>
                         </TouchableOpacity>
+
+                        {onDislike && (
+                            <TouchableOpacity
+                                className="flex-row items-center"
+                                onPress={() => onDislike(post._id)}
+                                disabled={isThisPostDisliking}
+                            >
+                                {isThisPostDisliking ? (
+                                    <ActivityIndicator size="small" color={isDisliked ? "#EF4444" : "#657786"} />
+                                ) : isDisliked ? (
+                                    <Feather name="thumbs-down" size={18} color="#EF4444" />
+                                ) : (
+                                    <Feather name="thumbs-down" size={18} color="#657786" />
+                                )}
+                                <Text className={`text-sm ml-2 ${isDisliked ? "text-red-500" : "text-gray-500"}`}>
+                                    {formatNumber(post.dislikes?.length || 0)}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+
+                        <View className="flex-row items-center">
+                            <Text className="text-gray-700 text-sm font-semibold">
+                                Net: {post.netScore || 0}
+                            </Text>
+                        </View>
 
                         <TouchableOpacity>
                             <Feather name="share" size={18} color="#657786" />

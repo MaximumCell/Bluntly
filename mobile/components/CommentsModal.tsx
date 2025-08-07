@@ -1,7 +1,9 @@
 import { useComments } from "@/hooks/useComments";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Post } from "@/types";
-import Feather from "@expo/vector-icons/build/Feather";import {
+import Feather from "@expo/vector-icons/build/Feather";
+import { Ionicons } from '@expo/vector-icons';
+import {
   View,
   Text,
   Modal,
@@ -30,8 +32,92 @@ interface CommentsModalProps {
 }
 
 const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
-  const { comments, setComments, createComment, isCreatingComment, deleteComment } = useComments();
+  const {
+    comments,
+    setComments,
+    createComment,
+    isCreatingComment,
+    deleteComment,
+    toggleCommentLike,
+    toggleCommentDislike,
+    checkIsCommentLiked,
+    checkIsCommentDisliked,
+    likingCommentId,
+    dislikingCommentId
+  } = useComments();
   const { currentUser } = useCurrentUser();
+
+  // Local state for optimistic updates
+  const [localPost, setLocalPost] = useState(selectedPost);
+
+  // Update local state when selectedPost changes
+  useEffect(() => {
+    if (selectedPost) {
+      setLocalPost(selectedPost);
+    }
+  }, [selectedPost]);
+
+  // Optimistic comment like handler
+  const handleCommentLike = async (commentId: string) => {
+    if (!currentUser) return;
+
+    // Optimistically update local state
+    setLocalPost(prev => ({
+      ...prev,
+      comments: prev.comments.map(comment => {
+        if (comment._id === commentId) {
+          const isLiked = comment.likes.includes(currentUser._id);
+          const newLikes = isLiked
+            ? comment.likes.filter(id => id !== currentUser._id)
+            : [...comment.likes, currentUser._id];
+
+          // Remove from dislikes if present
+          const newDislikes = comment.dislikes.filter(id => id !== currentUser._id);
+
+          return {
+            ...comment,
+            likes: newLikes,
+            dislikes: newDislikes
+          };
+        }
+        return comment;
+      })
+    }));
+
+    // Call the actual mutation
+    toggleCommentLike(commentId);
+  };
+
+  // Optimistic comment dislike handler
+  const handleCommentDislike = async (commentId: string) => {
+    if (!currentUser) return;
+
+    // Optimistically update local state
+    setLocalPost(prev => ({
+      ...prev,
+      comments: prev.comments.map(comment => {
+        if (comment._id === commentId) {
+          const isDisliked = comment.dislikes.includes(currentUser._id);
+          const newDislikes = isDisliked
+            ? comment.dislikes.filter(id => id !== currentUser._id)
+            : [...comment.dislikes, currentUser._id];
+
+          // Remove from likes if present
+          const newLikes = comment.likes.filter(id => id !== currentUser._id);
+
+          return {
+            ...comment,
+            likes: newLikes,
+            dislikes: newDislikes
+          };
+        }
+        return comment;
+      })
+    }));
+
+    // Call the actual mutation
+    toggleCommentDislike(commentId);
+  };
 
   const [isScrollAtTop, setIsScrollAtTop] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
@@ -219,7 +305,7 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                 <View className="w-12" />
               </View>
 
-              {selectedPost && (
+              {localPost && (
                 <ScrollView
                   ref={scrollViewRef}
                   className="flex-1"
@@ -232,27 +318,27 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                   <View className="border-b border-gray-100 bg-white p-4">
                     <View className="flex-row">
                       <Image
-                        source={{ uri: selectedPost.user.profilePicture }}
+                        source={{ uri: localPost.user.profilePicture }}
                         className="size-12 rounded-full mr-3"
                       />
 
                       <View className="flex-1">
                         <View className="flex-row items-center mb-1">
                           <Text className="font-bold text-gray-900 mr-1">
-                            {selectedPost.user.firstName} {selectedPost.user.lastName}
+                            {localPost.user.firstName} {localPost.user.lastName}
                           </Text>
-                          <Text className="text-gray-500 ml-1">@{selectedPost.user.username}</Text>
+                          <Text className="text-gray-500 ml-1">@{localPost.user.username}</Text>
                         </View>
 
-                        {selectedPost.content && (
+                        {localPost.content && (
                           <Text className="text-gray-900 text-base leading-5 mb-3">
-                            {selectedPost.content}
+                            {localPost.content}
                           </Text>
                         )}
 
-                        {selectedPost.image && (
+                        {localPost.image && (
                           <Image
-                            source={{ uri: selectedPost.image }}
+                            source={{ uri: localPost.image }}
                             className="w-full h-48 rounded-2xl mb-3"
                             resizeMode="cover"
                           />
@@ -262,7 +348,7 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                   </View>
 
                   {/* COMMENTS LIST */}
-                  {selectedPost.comments.map((comment) => (
+                  {localPost.comments.map((comment) => (
                     <View key={comment._id} className="border-b border-gray-100 bg-white p-4">
                       <View className="flex-row">
                         <Image
@@ -279,6 +365,37 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                           </View>
 
                           <Text className="text-gray-900 text-base leading-5 mb-2">{comment.content}</Text>
+
+                          {/* Like/Dislike buttons */}
+                          <View className="flex-row items-center space-x-4">
+                            {/* Like button */}
+                            <TouchableOpacity
+                              onPress={() => handleCommentLike(comment._id)}
+                              className="flex-row items-center space-x-1"
+                              disabled={likingCommentId === comment._id}
+                            >
+                              <Ionicons
+                                name={checkIsCommentLiked(comment.likes, currentUser) ? "heart" : "heart-outline"}
+                                size={16}
+                                color={checkIsCommentLiked(comment.likes, currentUser) ? "#ef4444" : "#6b7280"}
+                              />
+                              <Text className="text-gray-600 text-xs">{comment.likes?.length || 0}</Text>
+                            </TouchableOpacity>
+
+                            {/* Dislike button */}
+                            <TouchableOpacity
+                              onPress={() => handleCommentDislike(comment._id)}
+                              className="flex-row items-center space-x-1"
+                              disabled={dislikingCommentId === comment._id}
+                            >
+                              <Ionicons
+                                name={checkIsCommentDisliked(comment.dislikes, currentUser) ? "heart-dislike" : "heart-dislike-outline"}
+                                size={16}
+                                color={checkIsCommentDisliked(comment.dislikes, currentUser) ? "#6366f1" : "#6b7280"}
+                              />
+                              <Text className="text-gray-600 text-xs">{comment.dislikes?.length || 0}</Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
 
                         {/* Only show delete button if current user is the comment owner */}
@@ -317,7 +434,7 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                         <TouchableOpacity
                           className={`px-4 py-2 rounded-lg self-start ${comments.trim() ? "bg-blue-500" : "bg-gray-300"
                             }`}
-                          onPress={() => createComment(selectedPost._id)}
+                          onPress={() => createComment(localPost._id)}
                           disabled={isCreatingComment || !comments.trim()}
                         >
                           {isCreatingComment ? (

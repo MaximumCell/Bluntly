@@ -9,7 +9,7 @@ import CommentsModal from './CommentsModal';
 const PostsList = ({ username }: { username?: string }) => {
   // ALL hooks must be called first
   const { currentUser } = useCurrentUser();
-  const { posts, isLoading, error, refetch, toggleLike, deletePost, checkIsLiked, likingPostId, deletingPostId } = usePosts(username);
+  const { posts, isLoading, error, refetch, toggleLike, toggleDislike, deletePost, checkIsLiked, checkIsDisliked, likingPostId, dislikingPostId, deletingPostId } = usePosts(username);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const selectedPost = selectedPostId ? posts.find((post: Post) => post._id === selectedPostId) : null;
 
@@ -49,11 +49,14 @@ const PostsList = ({ username }: { username?: string }) => {
           key={post._id}
           post={post}
           onLike={toggleLike}
+          onDislike={toggleDislike}
           onDelete={deletePost}
           currentUser={currentUser}
           isLiked={checkIsLiked(post.likes, currentUser)}
+          isDisliked={checkIsDisliked(post.dislikes, currentUser)}
           onComment={(post: Post) => setSelectedPostId(post._id)}
           likingPostId={likingPostId}
+          dislikingPostId={dislikingPostId}
           deletingPostId={deletingPostId}
         />
       ))}
