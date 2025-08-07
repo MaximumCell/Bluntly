@@ -1,15 +1,19 @@
 import { Router } from "express";
-import { protectRoute } from "../middleware/auth.middleware.js";
 import {
-  getAllUsers,
   getMessages,
   sendMessage,
+  getAllUsers,
 } from "../controllers/message.controller.js";
 
 const router = Router();
 
-router.get("/users", protectRoute, getAllUsers);
-router.get("/:userId", protectRoute, getMessages);
-router.post("/send/:userId", protectRoute, sendMessage);
+// GET /api/messages?senderId=xxx&receiverId=yyy - Get messages between two users
+router.get("/", getMessages);
+
+// POST /api/messages - Send a message
+router.post("/", sendMessage);
+
+// GET /api/messages/users?currentUserId=xxx - Get all users that have message history with current user
+router.get("/users", getAllUsers);
 
 export default router;

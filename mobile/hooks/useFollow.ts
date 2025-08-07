@@ -25,14 +25,17 @@ export const useFollow = () => {
 };
 
 import { useQuery } from "@tanstack/react-query";
-export const useProfile = (username: string) => {
+import { useAuth } from "@clerk/clerk-expo";
+
+export const useUserProfile = (username: string) => {
     const api = useApiClient();
+    const { isLoaded } = useAuth();
 
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ["userProfile", username],
         queryFn: () => userApi.getUserByUsername(api, username),
         select: (res) => res.data.user,
-        enabled: !!username,
+        enabled: !!username && isLoaded, // Only run when auth is loaded and username exists
     });
 
     return {

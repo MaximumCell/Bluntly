@@ -24,8 +24,12 @@ export default function RootLayout() {
       >
         <QueryClientProvider client={queryClient}>
           <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="chat" />
+            <Stack.Screen name="userProfile" />
+            <Stack.Screen name="myProfile" />
           </Stack>
           <StatusBar style='dark' />
         </QueryClientProvider>

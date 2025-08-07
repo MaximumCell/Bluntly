@@ -1,15 +1,15 @@
 export interface User {
   _id: string;
   username: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   profilePicture?: string;
 }
 
 export interface Message {
   _id: string;
-  senderId: string;
-  receiverId: string;
+  senderId: string | User;
+  receiverId: string | User;
   content: string;
   createdAt: string;
   updatedAt: string;

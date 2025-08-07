@@ -24,9 +24,9 @@ export class MessageAPIService {
     }
 
     // Get all users that have message history
-    static async getAllUsers() {
+    static async getAllUsers(currentUserId: string) {
         try {
-            const response = await messageAPI.get('/users');
+            const response = await messageAPI.get(`/users?currentUserId=${currentUserId}`);
             return {
                 success: true,
                 users: response.data.users || [],
@@ -42,9 +42,9 @@ export class MessageAPIService {
     }
 
     // Get messages between current user and specific user
-    static async getMessages(userId: string) {
+    static async getMessages(senderId: string, receiverId: string) {
         try {
-            const response = await messageAPI.get(`/${userId}`);
+            const response = await messageAPI.get(`?senderId=${senderId}&receiverId=${receiverId}`);
             return {
                 success: true,
                 messages: response.data.messages || [],
@@ -60,9 +60,11 @@ export class MessageAPIService {
     }
 
     // Send message via HTTP (alternative to socket)
-    static async sendMessage(userId: string, content: string) {
+    static async sendMessage(senderId: string, receiverId: string, content: string) {
         try {
-            const response = await messageAPI.post(`/send/${userId}`, {
+            const response = await messageAPI.post('/', {
+                senderId,
+                receiverId,
                 content,
             });
             return {
@@ -91,6 +93,24 @@ export class MessageAPIService {
             return {
                 success: false,
                 error: 'Server health check failed',
+            };
+        }
+    }
+
+    // Search all users (for finding new people to message)
+    static async searchUsers() {
+        try {
+            const response = await axios.get('https://bluntly.onrender.com/api/users');
+            return {
+                success: true,
+                users: response.data || [],
+            };
+        } catch (error: any) {
+            console.error('Error searching users:', error);
+            return {
+                success: false,
+                error: error.response?.data?.message || 'Failed to search users',
+                users: [],
             };
         }
     }

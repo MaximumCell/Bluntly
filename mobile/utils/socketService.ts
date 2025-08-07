@@ -19,6 +19,8 @@ class SocketService {
         try {
             this.userId = userId;
 
+            console.log('🔌 Attempting to connect to socket server:', SOCKET_SERVER_URL);
+
             this.socket = io(SOCKET_SERVER_URL, {
                 transports: ['websocket', 'polling'],
                 timeout: 20000,
@@ -55,7 +57,7 @@ class SocketService {
         if (!this.socket) return;
 
         this.socket.on('connect', () => {
-            console.log('🔌 Socket connected');
+            console.log('🔌 Socket connected successfully');
             this.isConnected = true;
         });
 
@@ -65,7 +67,21 @@ class SocketService {
         });
 
         this.socket.on('connect_error', (error: Error) => {
-            console.error('❌ Socket connection error:', error);
+            console.error('❌ Socket connection error:', error.message);
+            this.isConnected = false;
+        });
+
+        this.socket.on('reconnect', (attemptNumber: number) => {
+            console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
+            this.isConnected = true;
+        });
+
+        this.socket.on('reconnect_error', (error: Error) => {
+            console.error('❌ Socket reconnection error:', error.message);
+        });
+
+        this.socket.on('reconnect_failed', () => {
+            console.error('❌ Socket reconnection failed - giving up');
             this.isConnected = false;
         });
 
@@ -166,6 +182,26 @@ class SocketService {
     // Get connection status
     getConnectionStatus(): boolean {
         return this.isConnected;
+    }
+
+    // Listen for connection status changes
+    onConnectionStatusChange(callback: (isConnected: boolean) => void): void {
+        if (this.socket) {
+            this.socket.on('connect', () => {
+                this.isConnected = true;
+                callback(true);
+            });
+
+            this.socket.on('disconnect', () => {
+                this.isConnected = false;
+                callback(false);
+            });
+
+            this.socket.on('connect_error', () => {
+                this.isConnected = false;
+                callback(false);
+            });
+        }
     }
 
     // Remove specific event listener

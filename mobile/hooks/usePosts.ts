@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApiClient, postsApi } from "@/utils/api";
 import { useState } from "react";
+import { useAuth } from "@clerk/clerk-expo";
 
 export const usePosts = (username?: string) => {
     const api = useApiClient();
+    const { isLoaded } = useAuth();
 
     const queryClient = useQueryClient();
 
@@ -14,6 +16,7 @@ export const usePosts = (username?: string) => {
         queryKey: username ? ["userPosts", username] : ["posts"],
         queryFn: () => (username ? postsApi.getUserPosts(api, username) : postsApi.getPosts(api)),
         select: (response) => response.data.posts,
+        enabled: isLoaded, // Only run query when auth is loaded
     });
 
     const likePostMutation = useMutation({
