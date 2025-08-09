@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMessages } from '@/hooks/useMessages';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useEnhancedTheme } from '@/contexts/EnhancedThemeContext';
+import { EnhancedRetroBackground, RetroTransition } from '@/components/animations';
 import { User } from '@/types';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -19,6 +21,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 const MessagesScreen = () => {
   const { currentUser } = useCurrentUser();
+  const { currentTheme, currentPeriod } = useEnhancedTheme();
   const {
     allUsers,
     onlineUsers,
@@ -26,6 +29,7 @@ const MessagesScreen = () => {
     error,
     isConnected,
     isConnecting,
+    isReadMessagesLoaded,
     searchAllUsers,
     clearError,
     isUserOnline,
@@ -44,9 +48,11 @@ const MessagesScreen = () => {
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
 
   useEffect(() => {
-    // Load all users on mount
-    searchAllUsers();
-  }, []); // Only run once on mount
+    // Load all users on mount, but only after read messages are loaded
+    if (isReadMessagesLoaded) {
+      searchAllUsers();
+    }
+  }, [isReadMessagesLoaded]); // Only run when read messages are loaded
 
   // Listen for real-time updates to last messages and unread counts
   useEffect(() => {
@@ -77,7 +83,7 @@ const MessagesScreen = () => {
 
   // Auto-refresh when socket connection is established
   useEffect(() => {
-    if (isConnected && !isConnecting) {
+    if (isConnected && !isConnecting && isReadMessagesLoaded) {
       console.log('🔌 Socket connected - refreshing users and messages');
       // Automatically refresh users and last messages when socket connects
       searchAllUsers();
@@ -85,7 +91,7 @@ const MessagesScreen = () => {
         loadLastMessages();
       }
     }
-  }, [isConnected, isConnecting, searchAllUsers, loadLastMessages, allUsers.length]);
+  }, [isConnected, isConnecting, isReadMessagesLoaded, searchAllUsers, loadLastMessages, allUsers.length]);
 
   useEffect(() => {
     // Filter users based on search text and exclude current user
@@ -115,13 +121,16 @@ const MessagesScreen = () => {
   useFocusEffect(
     React.useCallback(() => {
       console.log('📱 Messages screen focused - refreshing last messages');
-      if (allUsers.length > 0) {
+
+      // Reload last messages to get the most current state, but only if read messages are loaded
+      if (allUsers.length > 0 && isReadMessagesLoaded) {
         loadLastMessages();
       }
-    }, [allUsers.length, loadLastMessages])
-  );
 
-  const getUserDisplayName = (user: User) => {
+      // Force a re-render to ensure UI updates
+      setLastUpdateTime(Date.now());
+    }, [allUsers.length, loadLastMessages, isReadMessagesLoaded])
+  ); const getUserDisplayName = (user: User) => {
     return user.firstName && user.lastName
       ? `${user.firstName} ${user.lastName}`
       : user.username;
@@ -158,178 +167,494 @@ const MessagesScreen = () => {
   };
 
   // Render user item
-  const renderUserItem = ({ item }: { item: User }) => (
-    <TouchableOpacity
-      className="px-4 py-4 border-b border-gray-200 flex-row items-center bg-white active:bg-gray-50"
-      onPress={() => handleUserPress(item)}
-    >
-      {/* Profile Picture */}
-      <View className="relative mr-3">
-        {item.profilePicture ? (
-          <Image
-            source={{ uri: item.profilePicture }}
-            className="w-14 h-14 rounded-full"
-          />
-        ) : (
-          <View className="w-14 h-14 rounded-full bg-blue-500 items-center justify-center">
-            <Text className="text-white font-bold text-lg">
-              {(item.firstName?.[0] || item.username[0]).toUpperCase()}
-            </Text>
-          </View>
-        )}
-
-        {/* Online Status Indicator */}
+  const renderUserItem = ({ item, index }: { item: User; index: number }) => (
+    <RetroTransition type="slideUp" delay={index * 50}>
+      <TouchableOpacity
+        style={{
+          marginHorizontal: 16,
+          marginVertical: 6,
+          borderRadius: 16,
+          backgroundColor: currentTheme.colors.surface + '30',
+          borderWidth: 1,
+          borderColor: currentTheme.colors.primary + '40',
+          shadowColor: currentTheme.colors.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 12,
+          elevation: 5,
+          overflow: 'hidden',
+        }}
+        onPress={() => handleUserPress(item)}
+        activeOpacity={0.8}
+      >
+        {/* Retro glow effect */}
         <View
-          className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${isUserOnline(item._id) ? 'bg-green-500' : 'bg-gray-400'
-            }`}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 2,
+            backgroundColor: currentTheme.colors.accent,
+            opacity: 0.7,
+          }}
         />
-      </View>
 
-      <View className="flex-1 min-w-0">
-        {/* Name and Time Row */}
-        <View className="flex-row items-center justify-between mb-1">
-          <Text className="text-gray-900 font-semibold text-base flex-1" numberOfLines={1}>
-            {getUserDisplayName(item)}
-          </Text>
-          <View className="items-end">
-            {getLastMessage(item._id) && (
-              <Text className="text-gray-400 text-xs">
-                {new Date(getLastMessage(item._id).createdAt).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </Text>
+        <View style={{ padding: 16, flexDirection: 'row', alignItems: 'center' }}>
+          {/* Profile Picture with retro border */}
+          <View style={{ position: 'relative', marginRight: 16 }}>
+            {item.profilePicture ? (
+              <Image
+                source={{ uri: item.profilePicture }}
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  borderWidth: 3,
+                  borderColor: isUserOnline(item._id)
+                    ? currentTheme.colors.accent + 'AA'
+                    : currentTheme.colors.primary + '60',
+                }}
+              />
+            ) : (
+              <View
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: currentTheme.colors.primary + '80',
+                  borderWidth: 3,
+                  borderColor: isUserOnline(item._id)
+                    ? currentTheme.colors.accent + 'AA'
+                    : currentTheme.colors.primary + '60',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{
+                  color: currentTheme.colors.text,
+                  fontWeight: 'bold',
+                  fontSize: 20,
+                  textShadowColor: currentTheme.colors.primary + '80',
+                  textShadowOffset: { width: 1, height: 1 },
+                  textShadowRadius: 2,
+                }}>
+                  {(item.firstName?.[0] || item.username[0]).toUpperCase()}
+                </Text>
+              </View>
             )}
-            {/* New messages count below time */}
-            {getUnreadCount(item._id) > 0 && (
-              <Text className="text-green-500 text-xs font-semibold mt-0.5">
-                {getUnreadCount(item._id)} new message{getUnreadCount(item._id) > 1 ? 's' : ''}
-              </Text>
-            )}
+
+            {/* Enhanced online status with glow */}
+            <View
+              style={{
+                position: 'absolute',
+                bottom: -2,
+                right: -2,
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                backgroundColor: isUserOnline(item._id) ? currentTheme.colors.accent : currentTheme.colors.text + '60',
+                borderWidth: 3,
+                borderColor: currentTheme.colors.surface,
+                shadowColor: isUserOnline(item._id) ? currentTheme.colors.accent : 'transparent',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
+            />
           </View>
-        </View>
 
-        {/* Message and Badge Row */}
-        <View className="flex-row items-center justify-between">
-          <View className="flex-1 min-w-0 mr-2">
-            {getLastMessage(item._id) ? (
+          <View style={{ flex: 1, minWidth: 0 }}>
+            {/* Name and Time Row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <Text
-                className={`text-sm ${getUnreadCount(item._id) > 0 ? 'text-green-600 font-semibold' : 'text-gray-600'}`}
+                style={{
+                  color: currentTheme.colors.text,
+                  fontWeight: '600',
+                  fontSize: 16,
+                  textShadowColor: currentTheme.colors.primary + '40',
+                  textShadowOffset: { width: 0.5, height: 0.5 },
+                  textShadowRadius: 1,
+                }}
                 numberOfLines={1}
               >
-                {getUnreadCount(item._id) > 0 && (
-                  <Text className="text-green-500 font-bold">New: </Text>
+                {getUserDisplayName(item)}
+              </Text>
+              <View style={{ alignItems: 'flex-end' }}>
+                {getLastMessage(item._id) && (
+                  <Text style={{
+                    color: currentTheme.colors.text + 'CC',
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                  }}>
+                    {new Date(getLastMessage(item._id).createdAt).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </Text>
                 )}
-                {getLastMessage(item._id).content}
-              </Text>
-            ) : (
-              <Text className="text-blue-500 text-sm italic">
-                Start a new conversation
-              </Text>
-            )}
+                {getUnreadCount(item._id) > 0 && (
+                  <Text style={{
+                    color: currentTheme.colors.accent,
+                    fontSize: 11,
+                    fontWeight: '600',
+                    marginTop: 2,
+                    textShadowColor: currentTheme.colors.accent + '80',
+                    textShadowOffset: { width: 0, height: 0 },
+                    textShadowRadius: 3,
+                  }}>
+                    {getUnreadCount(item._id)} new
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* Message Preview */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <View style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
+                {getLastMessage(item._id) ? (
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: getUnreadCount(item._id) > 0
+                        ? currentTheme.colors.accent
+                        : currentTheme.colors.text + 'DD',
+                      fontWeight: getUnreadCount(item._id) > 0 ? '500' : '400',
+                    }}
+                    numberOfLines={1}
+                  >
+                    {getUnreadCount(item._id) > 0 && (
+                      <Text style={{ color: currentTheme.colors.accent, fontWeight: '600' }}>
+                        ● </Text>
+                    )}
+                    {getLastMessage(item._id).content}
+                  </Text>
+                ) : (
+                  <Text style={{
+                    color: currentTheme.colors.secondary,
+                    fontSize: 14,
+                    fontStyle: 'italic',
+                    opacity: 0.8,
+                  }}>
+                    Start conversation
+                  </Text>
+                )}
+              </View>
+
+              {/* Unread Badge with retro glow */}
+              {getUnreadCount(item._id) > 0 && (
+                <View
+                  style={{
+                    backgroundColor: currentTheme.colors.accent,
+                    borderRadius: 12,
+                    minWidth: 24,
+                    height: 24,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 6,
+                    shadowColor: currentTheme.colors.accent,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.6,
+                    shadowRadius: 6,
+                    elevation: 4,
+                  }}
+                >
+                  <Text style={{
+                    color: currentTheme.colors.surface,
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                    textShadowColor: currentTheme.colors.primary,
+                    textShadowOffset: { width: 0.5, height: 0.5 },
+                    textShadowRadius: 1,
+                  }}>
+                    {getUnreadCount(item._id) > 99 ? '99+' : getUnreadCount(item._id)}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Username */}
+            <Text
+              style={{
+                color: currentTheme.colors.text + '80',
+                fontSize: 12,
+                fontFamily: 'monospace',
+                opacity: 0.8,
+              }}
+              numberOfLines={1}
+            >
+              @{item.username}
+            </Text>
           </View>
 
-          {/* Unread Badge */}
-          {getUnreadCount(item._id) > 0 && (
-            <View className="bg-green-500 rounded-full min-w-[20px] h-5 items-center justify-center px-1.5">
-              <Text className="text-white text-xs font-bold">
-                {getUnreadCount(item._id) > 99 ? '99+' : getUnreadCount(item._id)}
-              </Text>
-            </View>
-          )}
+          {/* Retro chevron */}
+          <View style={{ marginLeft: 8 }}>
+            <Feather
+              name="chevron-right"
+              size={20}
+              color={currentTheme.colors.primary}
+              style={{ opacity: 0.6 }}
+            />
+          </View>
         </View>
-
-        {/* Username/Handle */}
-        <Text className="text-gray-400 text-xs mt-0.5" numberOfLines={1}>
-          @{item.username}
-        </Text>
-      </View>
-
-      {/* Chevron */}
-      <View className="ml-2">
-        <Feather name="chevron-right" size={20} color="#9CA3AF" />
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </RetroTransition>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="px-4 py-4 bg-white border-b border-gray-200">
-        <Text className="text-2xl font-bold text-gray-900 mb-4">
-          Messages
-        </Text>
-
-        {/* Search Bar */}
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-3 mb-4">
-          <Feather name="search" size={20} color="#9CA3AF" />
-          <TextInput
-            className="flex-1 py-3 px-3 text-base text-gray-900"
-            placeholder="Search users..."
-            placeholderTextColor="#9CA3AF"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-          {searchText.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchText('')} className="p-1">
-              <Feather name="x" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Connection Status */}
-        <View className="flex-row items-center mt-3">
-          <View
-            className={`w-2 h-2 rounded-full mr-2 ${isConnecting ? 'bg-orange-500' : (isConnected ? 'bg-green-500' : 'bg-red-500')
-              }`}
-          />
-          <Text className="text-xs text-gray-600">
-            {isConnecting ? 'Connecting...' : (isConnected ? 'Connected' : 'Disconnected')} • Online Users: {onlineUsers.length}
-          </Text>
-        </View>
-      </View>
-
-      {/* Error Message */}
-      {error && (
-        <View className="bg-red-50 mx-4 my-4 p-3 rounded-lg border-l-4 border-red-500">
-          <Text className="text-red-700 text-sm">Error: {error}</Text>
-        </View>
-      )}
-
-      {/* Users List */}
-      {loading ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text className="mt-4 text-gray-600">Loading users...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredUsers}
-          keyExtractor={(item) => `${item._id}-${lastUpdateTime}`} // Include timestamp to force re-render
-          renderItem={renderUserItem}
-          className="flex-1"
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#3B82F6']} // Android
-              tintColor="#3B82F6" // iOS
-            />
-          }
-          ListEmptyComponent={() => (
-            <View className="py-10 px-10 items-center">
-              <Feather name="users" size={48} color="#9CA3AF" />
-              <Text className="text-gray-600 text-center mt-4 text-base leading-6">
-                {searchText
-                  ? `No users found for "${searchText}"`
-                  : 'No users available'}
+    <View style={{ flex: 1 }}>
+      <EnhancedRetroBackground
+        intensity={1.5}
+        showParticles={true}
+        showObjects={true}
+        showAtmosphere={true}
+      >
+        <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+          {/* Header */}
+          <RetroTransition type="slideUp" delay={0}>
+            <View style={{
+              paddingHorizontal: 20,
+              paddingVertical: 16,
+              backgroundColor: currentTheme.colors.surface + 'CC',
+              borderBottomWidth: 2,
+              borderBottomColor: currentTheme.colors.primary + '30',
+              shadowColor: currentTheme.colors.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 8,
+              elevation: 4,
+            }}>
+              <Text style={{
+                fontSize: 28,
+                fontWeight: 'bold',
+                color: currentTheme.colors.text,
+                marginBottom: 16,
+                textShadowColor: currentTheme.colors.primary + '60',
+                textShadowOffset: { width: 1, height: 1 },
+                textShadowRadius: 3,
+                textAlign: 'center',
+              }}>
+                Messages
               </Text>
+
+              {/* Retro Search Bar */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: currentTheme.colors.surface + '60',
+                borderRadius: 20,
+                paddingHorizontal: 16,
+                marginBottom: 16,
+                borderWidth: 2,
+                borderColor: currentTheme.colors.primary + '40',
+                shadowColor: currentTheme.colors.primary,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.15,
+                shadowRadius: 6,
+                elevation: 3,
+              }}>
+                <Feather name="search" size={20} color={currentTheme.colors.primary} />
+                <TextInput
+                  style={{
+                    flex: 1,
+                    paddingVertical: 14,
+                    paddingHorizontal: 12,
+                    fontSize: 16,
+                    color: currentTheme.colors.text,
+                    fontFamily: 'monospace',
+                  }}
+                  placeholder="Search users..."
+                  placeholderTextColor={currentTheme.colors.text + '80'}
+                  value={searchText}
+                  onChangeText={setSearchText}
+                />
+                {searchText.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => setSearchText('')}
+                    style={{
+                      padding: 4,
+                      borderRadius: 12,
+                      backgroundColor: currentTheme.colors.primary + '20',
+                    }}
+                  >
+                    <Feather name="x" size={16} color={currentTheme.colors.primary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Enhanced Connection Status */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                backgroundColor: currentTheme.colors.surface + '30',
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: currentTheme.colors.primary + '30',
+              }}>
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    marginRight: 8,
+                    backgroundColor: isConnecting
+                      ? currentTheme.colors.accent + 'CC'
+                      : (isConnected ? currentTheme.colors.accent : currentTheme.colors.text + '60'),
+                    shadowColor: isConnected ? currentTheme.colors.accent : 'transparent',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.8,
+                    shadowRadius: 3,
+                    elevation: 2,
+                  }}
+                />
+                <Text style={{
+                  fontSize: 12,
+                  color: currentTheme.colors.text + 'DD',
+                  fontFamily: 'monospace',
+                }}>
+                  {isConnecting ? 'Connecting...' : (isConnected ? 'Connected' : 'Disconnected')} •
+                  <Text style={{ color: currentTheme.colors.accent, fontWeight: '600' }}>
+                    {' '}{onlineUsers.length} online
+                  </Text>
+                </Text>
+              </View>
             </View>
+          </RetroTransition>
+
+          {/* Error Message */}
+          {error && (
+            <RetroTransition type="slideUp" delay={100}>
+              <View style={{
+                backgroundColor: currentTheme.colors.accent + '20',
+                marginHorizontal: 16,
+                marginVertical: 8,
+                padding: 16,
+                borderRadius: 12,
+                borderLeftWidth: 4,
+                borderLeftColor: currentTheme.colors.accent,
+                shadowColor: currentTheme.colors.accent,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 6,
+                elevation: 3,
+              }}>
+                <Text style={{
+                  color: currentTheme.colors.text,
+                  fontSize: 14,
+                  fontWeight: '500',
+                }}>
+                  Error: {error}
+                </Text>
+              </View>
+            </RetroTransition>
           )}
-        />
-      )}
-    </SafeAreaView>
+
+          {/* Users List */}
+          {loading ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <RetroTransition type="scaleIn" delay={200}>
+                <View style={{
+                  backgroundColor: currentTheme.colors.surface + '40',
+                  padding: 24,
+                  borderRadius: 20,
+                  alignItems: 'center',
+                  borderWidth: 2,
+                  borderColor: currentTheme.colors.primary + '40',
+                  shadowColor: currentTheme.colors.primary,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 12,
+                  elevation: 6,
+                }}>
+                  <ActivityIndicator size="large" color={currentTheme.colors.primary} />
+                  <Text style={{
+                    marginTop: 16,
+                    color: currentTheme.colors.text,
+                    fontSize: 16,
+                    fontWeight: '500',
+                    textShadowColor: currentTheme.colors.primary + '40',
+                    textShadowOffset: { width: 0.5, height: 0.5 },
+                    textShadowRadius: 2,
+                  }}>
+                    Loading users...
+                  </Text>
+                </View>
+              </RetroTransition>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredUsers}
+              keyExtractor={(item) => `${item._id}-${lastUpdateTime}`}
+              renderItem={renderUserItem}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingTop: 8, paddingBottom: 20 }}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[currentTheme.colors.primary]}
+                  tintColor={currentTheme.colors.primary}
+                  progressBackgroundColor={currentTheme.colors.surface}
+                />
+              }
+              ListEmptyComponent={() => (
+                <RetroTransition type="fadeIn" delay={300}>
+                  <View style={{
+                    paddingVertical: 40,
+                    paddingHorizontal: 32,
+                    alignItems: 'center',
+                    backgroundColor: currentTheme.colors.surface + '30',
+                    marginHorizontal: 16,
+                    marginTop: 20,
+                    borderRadius: 20,
+                    borderWidth: 2,
+                    borderColor: currentTheme.colors.primary + '30',
+                    shadowColor: currentTheme.colors.primary,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 10,
+                    elevation: 4,
+                  }}>
+                    <View style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: 32,
+                      backgroundColor: currentTheme.colors.primary + '20',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 16,
+                      borderWidth: 2,
+                      borderColor: currentTheme.colors.primary + '40',
+                    }}>
+                      <Feather name="users" size={32} color={currentTheme.colors.primary} />
+                    </View>
+                    <Text style={{
+                      color: currentTheme.colors.text,
+                      textAlign: 'center',
+                      fontSize: 16,
+                      lineHeight: 24,
+                      fontWeight: '500',
+                      textShadowColor: currentTheme.colors.primary + '30',
+                      textShadowOffset: { width: 0.5, height: 0.5 },
+                      textShadowRadius: 2,
+                    }}>
+                      {searchText
+                        ? `No users found for "${searchText}"`
+                        : 'No users available'}
+                    </Text>
+                  </View>
+                </RetroTransition>
+              )}
+            />
+          )}
+        </SafeAreaView>
+      </EnhancedRetroBackground>
+    </View>
   );
 };
 

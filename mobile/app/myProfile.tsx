@@ -4,14 +4,17 @@ import SignOutButton from '@/components/SignOutButton';
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { usePosts } from '@/hooks/usePosts';
 import { useProfile } from '@/hooks/useProfile';
-import { Feather } from '@expo/vector-icons';
-import { View, Text, ActivityIndicator, SafeAreaView, ScrollView, Image, TouchableOpacity, RefreshControl } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEnhancedTheme } from '@/contexts/EnhancedThemeContext';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { View, Text, ActivityIndicator, ScrollView, Image, TouchableOpacity, RefreshControl } from 'react-native'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { EnhancedRetroBackground, RetroTransition, RetroLoader } from '@/components/animations';
 
 const MyProfileScreen = () => {
     // ALL hooks must be called first, before any conditional logic
     const { currentUser, isLoading } = useCurrentUser();
+    const { currentTheme, currentPeriod } = useEnhancedTheme();
     const {
         posts: userPosts,
         refetch: refetchPosts,
@@ -34,120 +37,365 @@ const MyProfileScreen = () => {
     // Early returns come AFTER all hooks
     if (isLoading) {
         return (
-            <View className="flex-1 bg-white items-center justify-center">
-                <ActivityIndicator size="large" color="#1DA1F2" />
-            </View>
+            <EnhancedRetroBackground intensity={0.8}>
+                <View style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'transparent'
+                }}>
+                    <RetroTransition type="scaleIn" delay={200}>
+                        <RetroLoader style="neon" size="large" />
+                        <Text style={{
+                            marginTop: 20,
+                            color: currentTheme.colors.text,
+                            fontSize: 16,
+                            fontFamily: 'monospace',
+                            textAlign: 'center'
+                        }}>
+                            Loading profile...
+                        </Text>
+                    </RetroTransition>
+                </View>
+            </EnhancedRetroBackground>
         );
     }
 
     if (!currentUser) {
         return (
-            <View className="flex-1 bg-white items-center justify-center">
-                <Text>No user data found</Text>
-            </View>
+            <EnhancedRetroBackground intensity={0.6}>
+                <View style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'transparent'
+                }}>
+                    <RetroTransition type="fadeIn">
+                        <Text style={{ color: currentTheme.colors.text }}>No user data found</Text>
+                    </RetroTransition>
+                </View>
+            </EnhancedRetroBackground>
         );
     }
 
     return (
-        <SafeAreaView className='flex-1 bg-white' style={{ paddingTop: insets.top }}>
-            {/* Header */}
-            <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
-                <View className="flex-row items-center flex-1">
-                    <TouchableOpacity onPress={() => router.back()} className="mr-4">
-                        <Feather name="arrow-left" size={24} color="#000" />
-                    </TouchableOpacity>
-                    <View>
-                        <Text className="text-xl font-bold text-gray-900">
-                            {currentUser.firstName} {currentUser.lastName}
-                        </Text>
-                        <Text className="text-gray-500 text-sm">{userPosts?.length || 0} Posts</Text>
+        <EnhancedRetroBackground
+            intensity={1.5}
+            showParticles={true}
+            showObjects={true}
+            showAtmosphere={true}
+        >
+            <SafeAreaView style={{ flex: 1 }} edges={["top", "left", "right"]}>
+                {/* Enhanced Header */}
+                <RetroTransition type="slideUp" delay={0}>
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                        backgroundColor: currentTheme.colors.surface + 'CC',
+                        borderBottomWidth: 2,
+                        borderBottomColor: currentTheme.colors.primary + '30',
+                        shadowColor: currentTheme.colors.primary,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 6,
+                        elevation: 4,
+                    }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                            <TouchableOpacity
+                                onPress={() => router.back()}
+                                style={{
+                                    marginRight: 16,
+                                    padding: 8,
+                                    borderRadius: 20,
+                                    backgroundColor: currentTheme.colors.primary + '10',
+                                }}
+                            >
+                                <Feather name="arrow-left" size={24} color={currentTheme.colors.primary} />
+                            </TouchableOpacity>
+                            <View>
+                                <Text style={{
+                                    fontSize: 20,
+                                    fontWeight: 'bold',
+                                    color: currentTheme.colors.text,
+                                    fontFamily: 'monospace',
+                                    textShadowColor: currentTheme.colors.primary + '40',
+                                    textShadowOffset: { width: 0.5, height: 0.5 },
+                                    textShadowRadius: 1,
+                                }}>
+                                    {currentUser.firstName} {currentUser.lastName}
+                                </Text>
+                                <Text style={{
+                                    color: currentTheme.colors.text + 'CC',
+                                    fontSize: 14,
+                                    fontFamily: 'monospace',
+                                }}>
+                                    {userPosts?.length || 0} Posts
+                                </Text>
+                            </View>
+                        </View>
+                        <SignOutButton />
                     </View>
-                </View>
-                <SignOutButton />
-            </View>
+                </RetroTransition>
 
-            <ScrollView
-                className='flex-1'
-                contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={isRefetching}
-                        onRefresh={() => {
-                            refetchProfile();
-                            refetchPosts();
-                        }}
-                        colors={['#1DA1F2']}
-                        tintColor={'#1DA1F2'}
-                    />
-                }
-            >
-                <View className='relative'>
-                    <Image
-                        source={{ uri: currentUser.bannerImage || "https://w0.peakpx.com/wallpaper/314/171/HD-wallpaper-shooting-star-art.jpg" }}
-                        className='w-full h-48'
-                        resizeMode='cover'
-                    />
-                </View>
-
-                <View className='px-4 pb-4 border-b border-gray-100'>
-                    <View className='flex-row items-end justify-between -mt-16 mb-4'>
-                        <Image
-                            source={{ uri: currentUser.profilePicture || 'https://via.placeholder.com/150' }}
-                            className="size-32 rounded-full border-4 border-white"
+                <ScrollView
+                    style={{
+                        flex: 1,
+                        backgroundColor: 'transparent'
+                    }}
+                    contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={isRefetching}
+                            onRefresh={() => {
+                                refetchProfile();
+                                refetchPosts();
+                            }}
+                            colors={[currentTheme.colors.primary]}
+                            tintColor={currentTheme.colors.primary}
+                            progressBackgroundColor={currentTheme.colors.surface}
                         />
-                        <TouchableOpacity
-                            className="rounded-full px-6 py-2 bg-white border border-gray-300"
-                            onPress={openEditModal}
-                        >
-                            <Text className="font-semibold text-gray-900">Edit Profile</Text>
-                        </TouchableOpacity>
-                    </View>
+                    }
+                >
+                    {/* Enhanced Cover Image */}
+                    <RetroTransition type="fadeIn" delay={100}>
+                        <View style={{
+                            position: 'relative',
+                            borderBottomWidth: 3,
+                            borderBottomColor: currentTheme.colors.primary + '60'
+                        }}>
+                            <Image
+                                source={{ uri: currentUser.bannerImage || "https://w0.peakpx.com/wallpaper/314/171/HD-wallpaper-shooting-star-art.jpg" }}
+                                style={{
+                                    width: '100%',
+                                    height: 192,
+                                }}
+                                resizeMode='cover'
+                            />
+                        </View>
+                    </RetroTransition>
 
-                    <View className='mb-4'>
-                        <View className='flex-row items-center mb-1'>
-                            <Text className='text-xl font-bold text-gray-900 mr-1'>{currentUser.firstName} {currentUser.lastName}</Text>
-                            <Feather name='check-circle' size={20} color='#1DA1F2' />
-                        </View>
-                        <Text className='text-gray-500 mb-2'>@{currentUser.username}</Text>
-                        <Text className='text-gray-900 mb-3'>{currentUser.bio || "No bio available."}</Text>
-                        <View className='flex-row items-center mb-3'>
-                            <Feather name='map-pin' size={16} color='#1DA1F2' />
-                            <Text className='text-gray-500 ml-2'>{currentUser.location || "Unknown location"}</Text>
-                        </View>
-                        <View className='flex-row items-center mb-3'>
-                            <Feather name='calendar' size={16} color='#1DA1F2' />
-                            <Text className='text-gray-500 ml-2'>Joined {new Date(currentUser.createdAt).toLocaleDateString()}</Text>
-                        </View>
-                        <View className="flex-row">
-                            <TouchableOpacity className="mr-6">
-                                <Text className="text-gray-900">
-                                    <Text className="font-bold">{currentUser.following?.length || 0}</Text>
-                                    <Text className="text-gray-500"> Following</Text>
+                    {/* Enhanced Profile Details */}
+                    <RetroTransition type="slideUp" delay={200}>
+                        <View style={{
+                            paddingHorizontal: 16,
+                            paddingBottom: 16,
+                            borderBottomWidth: 2,
+                            borderBottomColor: currentTheme.colors.primary + '20',
+                        }}>
+                            <View style={{
+                                flexDirection: 'row',
+                                alignItems: 'flex-end',
+                                justifyContent: 'space-between',
+                                marginTop: -64,
+                                marginBottom: 16,
+                            }}>
+                                {/* Enhanced Profile Picture */}
+                                <View style={{
+                                    borderWidth: 4,
+                                    borderColor: currentTheme.colors.surface,
+                                    borderRadius: 64,
+                                    shadowColor: currentTheme.colors.primary,
+                                    shadowOffset: { width: 0, height: 8 },
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 12,
+                                    elevation: 8,
+                                }}>
+                                    <Image
+                                        source={{ uri: currentUser.profilePicture || 'https://via.placeholder.com/150' }}
+                                        style={{
+                                            width: 128,
+                                            height: 128,
+                                            borderRadius: 64,
+                                        }}
+                                    />
+                                </View>
+
+                                {/* Enhanced Edit Button */}
+                                <TouchableOpacity
+                                    style={{
+                                        backgroundColor: currentTheme.colors.primary,
+                                        borderRadius: 25,
+                                        paddingHorizontal: 24,
+                                        paddingVertical: 12,
+                                        borderWidth: 2,
+                                        borderColor: currentTheme.colors.primary + '80',
+                                        shadowColor: currentTheme.colors.primary,
+                                        shadowOffset: { width: 0, height: 4 },
+                                        shadowOpacity: 0.3,
+                                        shadowRadius: 8,
+                                        elevation: 4,
+                                    }}
+                                    onPress={openEditModal}
+                                >
+                                    <Text style={{
+                                        fontWeight: '600',
+                                        color: currentTheme.colors.surface,
+                                        fontFamily: 'monospace',
+                                        textShadowColor: currentTheme.colors.primary + '80',
+                                        textShadowOffset: { width: 0.5, height: 0.5 },
+                                        textShadowRadius: 1,
+                                    }}>
+                                        Edit Profile
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Enhanced User Info */}
+                            <View style={{ marginBottom: 16 }}>
+                                <View style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    marginBottom: 4
+                                }}>
+                                    <Text style={{
+                                        fontSize: 24,
+                                        fontWeight: 'bold',
+                                        color: currentTheme.colors.text,
+                                        marginRight: 8,
+                                        textShadowColor: currentTheme.colors.primary + '30',
+                                        textShadowOffset: { width: 0.5, height: 0.5 },
+                                        textShadowRadius: 2,
+                                    }}>
+                                        {currentUser.firstName} {currentUser.lastName}
+                                    </Text>
+                                    <Ionicons name='checkmark-circle' size={24} color={currentTheme.colors.accent} />
+                                </View>
+
+                                <Text style={{
+                                    color: currentTheme.colors.text + 'CC',
+                                    fontSize: 16,
+                                    marginBottom: 12,
+                                    fontFamily: 'monospace',
+                                }}>
+                                    @{currentUser.username}
                                 </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity>
-                                <Text className="text-gray-900">
-                                    <Text className="font-bold">{currentUser.followers?.length || 0}</Text>
-                                    <Text className="text-gray-500"> Followers</Text>
+
+                                <Text style={{
+                                    color: currentTheme.colors.text,
+                                    fontSize: 16,
+                                    marginBottom: 16,
+                                    lineHeight: 24,
+                                }}>
+                                    {currentUser.bio || "No bio available."}
                                 </Text>
-                            </TouchableOpacity>
+
+                                {/* Enhanced Info Icons */}
+                                <View style={{ marginBottom: 12 }}>
+                                    <View style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        marginBottom: 8
+                                    }}>
+                                        <Feather
+                                            name='map-pin'
+                                            size={18}
+                                            color={currentTheme.colors.primary}
+                                            style={{ marginRight: 8 }}
+                                        />
+                                        <Text style={{
+                                            color: currentTheme.colors.text + 'CC',
+                                            fontSize: 14,
+                                        }}>
+                                            {currentUser.location || "Unknown location"}
+                                        </Text>
+                                    </View>
+                                    <View style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center'
+                                    }}>
+                                        <Feather
+                                            name='calendar'
+                                            size={18}
+                                            color={currentTheme.colors.primary}
+                                            style={{ marginRight: 8 }}
+                                        />
+                                        <Text style={{
+                                            color: currentTheme.colors.text + 'CC',
+                                            fontSize: 14,
+                                        }}>
+                                            Joined {new Date(currentUser.createdAt).toLocaleDateString()}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* Enhanced Stats Section */}
+                                <View style={{
+                                    flexDirection: 'row',
+                                    paddingVertical: 12,
+                                    backgroundColor: currentTheme.colors.surface + '80',
+                                    borderRadius: 16,
+                                    borderWidth: 2,
+                                    borderColor: currentTheme.colors.primary + '30',
+                                    shadowColor: currentTheme.colors.primary,
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: 0.1,
+                                    shadowRadius: 8,
+                                    elevation: 3,
+                                }}>
+                                    <TouchableOpacity style={{
+                                        flex: 1,
+                                        alignItems: 'center',
+                                        paddingVertical: 8
+                                    }}>
+                                        <Text style={{
+                                            fontWeight: 'bold',
+                                            fontSize: 18,
+                                            color: currentTheme.colors.text,
+                                        }}>
+                                            {currentUser.following?.length || 0}
+                                        </Text>
+                                        <Text style={{
+                                            color: currentTheme.colors.text + 'CC',
+                                            fontSize: 14,
+                                        }}>
+                                            Following
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity style={{
+                                        flex: 1,
+                                        alignItems: 'center',
+                                        paddingVertical: 8
+                                    }}>
+                                        <Text style={{
+                                            fontWeight: 'bold',
+                                            fontSize: 18,
+                                            color: currentTheme.colors.text,
+                                        }}>
+                                            {currentUser.followers?.length || 0}
+                                        </Text>
+                                        <Text style={{
+                                            color: currentTheme.colors.text + 'CC',
+                                            fontSize: 14,
+                                        }}>
+                                            Followers
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
                         </View>
-                    </View>
-                </View>
+                    </RetroTransition>
 
-                <PostsList username={currentUser?.username} />
-            </ScrollView>
+                    {/* Enhanced Posts Section */}
+                    <RetroTransition type="slideUp" delay={300}>
+                        <PostsList username={currentUser?.username} />
+                    </RetroTransition>
+                </ScrollView>
 
-            <EditProfileModal
-                isVisible={isEditModalVisible}
-                onClose={closeEditModal}
-                formData={formData}
-                updateFormField={updateFormField}
-                saveProfile={saveProfile}
-                isUpdating={isUpdating}
-            />
-        </SafeAreaView>
+                <EditProfileModal
+                    isVisible={isEditModalVisible}
+                    onClose={closeEditModal}
+                    formData={formData}
+                    updateFormField={updateFormField}
+                    saveProfile={saveProfile}
+                    isUpdating={isUpdating}
+                />
+            </SafeAreaView>
+        </EnhancedRetroBackground>
     );
 };
 

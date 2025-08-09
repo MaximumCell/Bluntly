@@ -1,5 +1,9 @@
-import { ActivityIndicator, ScrollView, TextInput } from 'react-native';
-import { View, Text, Modal, TouchableOpacity } from 'react-native'
+import { ActivityIndicator, ScrollView, TextInput, SafeAreaView } from 'react-native';
+import { View, Text, Modal, TouchableOpacity } from 'react-native';
+import { useEnhancedTheme } from '@/contexts/EnhancedThemeContext';
+import { EnhancedRetroBackground } from '@/components/animations';
+import { RetroTransition } from './animations';
+import { Ionicons } from '@expo/vector-icons';
 
 interface EditProfileModalProps {
   isVisible: boolean;
@@ -18,78 +22,255 @@ const EditProfileModal = ({
   updateFormField,
   isUpdating,
 }: EditProfileModalProps) => {
-    const handleSave = () => {
-      saveProfile();
-      onClose();
-    };
+  const { currentTheme } = useEnhancedTheme();
+
+  const handleSave = () => {
+    saveProfile();
+    onClose();
+  };
+
   return (
-    <Modal visible={isVisible} animationType="slide" presentationStyle='formSheet' onRequestClose={onClose}>
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
-        <TouchableOpacity onPress={onClose}>
-          <Text className="text-blue-500 text-lg">Cancel</Text>
-        </TouchableOpacity>
-        <Text className="text-lg font-semibold">Edit Profile</Text>
+    <Modal
+      visible={isVisible}
+      animationType="slide"
+      presentationStyle='formSheet'
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: currentTheme.colors.background[0] }}>
+        <EnhancedRetroBackground intensity={1.2}>
+          {/* Header */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+            borderBottomWidth: 1,
+            borderBottomColor: currentTheme.colors.primary + '30',
+            backgroundColor: currentTheme.colors.surface + 'CC',
+            backdropFilter: 'blur(10px)',
+          }}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={{
+                padding: 8,
+                borderRadius: 20,
+                backgroundColor: currentTheme.colors.surface + 'AA',
+                borderWidth: 1,
+                borderColor: currentTheme.colors.primary + '40',
+              }}
+            >
+              <Ionicons name="close" size={20} color={currentTheme.colors.primary} />
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={handleSave}
-          disabled={isUpdating}
-          className={`${isUpdating ? "opacity-50" : ""}`}
-        >
-          {isUpdating ? (
-            <ActivityIndicator size="small" color="#1DA1F2" />
-          ) : (
-            <Text className="text-blue-500 text-lg font-semibold">Save</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: 'bold',
+              color: currentTheme.colors.text,
+              fontFamily: 'monospace',
+              textShadowColor: currentTheme.colors.primary + '40',
+              textShadowOffset: { width: 0.5, height: 0.5 },
+              textShadowRadius: 1,
+            }}>
+              Edit Profile
+            </Text>
 
-      <ScrollView className='flex-1 px-4 py-6'>
-        <View className='space-y-4'>
-            <View>
-            <Text className="text-gray-500 text-sm mb-2">First Name</Text>
-            <TextInput
-              className="border border-gray-200 rounded-lg p-3 text-base"
-              value={formData.firstName}
-              onChangeText={(text) => updateFormField("firstName", text)}
-              placeholder="Your first name"
-            />
-          </View>
-          <View>
-            <Text className="text-gray-500 text-sm mb-2 mt-2">Last Name</Text>
-            <TextInput
-              className="border border-gray-200 rounded-lg px-3 py-3 text-base"
-              value={formData.lastName}
-              onChangeText={(text) => updateFormField("lastName", text)}
-              placeholder="Your last name"
-            />
-          </View>
-
-          <View>
-            <Text className="text-gray-500 text-sm mb-2 mt-2">Bio</Text>
-            <TextInput
-              className="border border-gray-200 rounded-lg px-3 py-3 text-base"
-              value={formData.bio}
-              onChangeText={(text) => updateFormField("bio", text)}
-              placeholder="Tell us about yourself"
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
+            <TouchableOpacity
+              onPress={handleSave}
+              disabled={isUpdating}
+              style={{
+                backgroundColor: isUpdating ? currentTheme.colors.primary + '60' : currentTheme.colors.primary,
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 20,
+                shadowColor: currentTheme.colors.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 4,
+              }}
+            >
+              {isUpdating ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontSize: 16,
+                  fontWeight: '600',
+                  fontFamily: 'monospace',
+                }}>
+                  Save
+                </Text>
+              )}
+            </TouchableOpacity>
           </View>
 
-          <View>
-            <Text className="text-gray-500 text-sm mb-2 mt-2">Location</Text>
-            <TextInput
-              className="border border-gray-200 rounded-lg px-3 py-3 text-base"
-              value={formData.location}
-              onChangeText={(text) => updateFormField("location", text)}
-              placeholder="Where are you located?"
-            />
-          </View>
-        </View>
-      </ScrollView>
+          {/* Content */}
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ padding: 20 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <RetroTransition type="slideUp" delay={100}>
+              <View style={{ gap: 20 }}>
+                {/* First Name Field */}
+                <View>
+                  <Text style={{
+                    color: currentTheme.colors.text + 'DD',
+                    fontSize: 14,
+                    fontWeight: '600',
+                    marginBottom: 8,
+                    fontFamily: 'monospace',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}>
+                    First Name
+                  </Text>
+                  <TextInput
+                    style={{
+                      backgroundColor: currentTheme.colors.surface + 'DD',
+                      borderWidth: 2,
+                      borderColor: currentTheme.colors.primary + '40',
+                      borderRadius: 12,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      fontSize: 16,
+                      color: currentTheme.colors.text,
+                      fontFamily: 'monospace',
+                      shadowColor: currentTheme.colors.primary,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}
+                    value={formData.firstName}
+                    onChangeText={(text) => updateFormField("firstName", text)}
+                    placeholder="Your first name"
+                    placeholderTextColor={currentTheme.colors.text + '60'}
+                  />
+                </View>
+
+                {/* Last Name Field */}
+                <View>
+                  <Text style={{
+                    color: currentTheme.colors.text + 'DD',
+                    fontSize: 14,
+                    fontWeight: '600',
+                    marginBottom: 8,
+                    fontFamily: 'monospace',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}>
+                    Last Name
+                  </Text>
+                  <TextInput
+                    style={{
+                      backgroundColor: currentTheme.colors.surface + 'DD',
+                      borderWidth: 2,
+                      borderColor: currentTheme.colors.primary + '40',
+                      borderRadius: 12,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      fontSize: 16,
+                      color: currentTheme.colors.text,
+                      fontFamily: 'monospace',
+                      shadowColor: currentTheme.colors.primary,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}
+                    value={formData.lastName}
+                    onChangeText={(text) => updateFormField("lastName", text)}
+                    placeholder="Your last name"
+                    placeholderTextColor={currentTheme.colors.text + '60'}
+                  />
+                </View>
+
+                {/* Bio Field */}
+                <View>
+                  <Text style={{
+                    color: currentTheme.colors.text + 'DD',
+                    fontSize: 14,
+                    fontWeight: '600',
+                    marginBottom: 8,
+                    fontFamily: 'monospace',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}>
+                    Bio
+                  </Text>
+                  <TextInput
+                    style={{
+                      backgroundColor: currentTheme.colors.surface + 'DD',
+                      borderWidth: 2,
+                      borderColor: currentTheme.colors.primary + '40',
+                      borderRadius: 12,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      fontSize: 16,
+                      color: currentTheme.colors.text,
+                      fontFamily: 'monospace',
+                      minHeight: 100,
+                      textAlignVertical: 'top',
+                      shadowColor: currentTheme.colors.primary,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}
+                    value={formData.bio}
+                    onChangeText={(text) => updateFormField("bio", text)}
+                    placeholder="Tell us about yourself"
+                    placeholderTextColor={currentTheme.colors.text + '60'}
+                    multiline
+                    numberOfLines={4}
+                  />
+                </View>
+
+                {/* Location Field */}
+                <View>
+                  <Text style={{
+                    color: currentTheme.colors.text + 'DD',
+                    fontSize: 14,
+                    fontWeight: '600',
+                    marginBottom: 8,
+                    fontFamily: 'monospace',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}>
+                    Location
+                  </Text>
+                  <TextInput
+                    style={{
+                      backgroundColor: currentTheme.colors.surface + 'DD',
+                      borderWidth: 2,
+                      borderColor: currentTheme.colors.primary + '40',
+                      borderRadius: 12,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      fontSize: 16,
+                      color: currentTheme.colors.text,
+                      fontFamily: 'monospace',
+                      shadowColor: currentTheme.colors.primary,
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}
+                    value={formData.location}
+                    onChangeText={(text) => updateFormField("location", text)}
+                    placeholder="Where are you located?"
+                    placeholderTextColor={currentTheme.colors.text + '60'}
+                  />
+                </View>
+              </View>
+            </RetroTransition>
+          </ScrollView>
+        </EnhancedRetroBackground>
+      </SafeAreaView>
     </Modal>
-  )
-}
+  );
+};
 
 export default EditProfileModal

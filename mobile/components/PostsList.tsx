@@ -5,8 +5,12 @@ import { usePosts } from '@/hooks/usePosts';
 import { Post } from '@/types';
 import PostCard from './PostCard';
 import CommentsModal from './CommentsModal';
+import { useEnhancedTheme } from '@/contexts/EnhancedThemeContext';
+import RetroTransition from '@/components/animations/RetroTransition';
+import RetroLoader from '@/components/animations/RetroLoader';
 
 const PostsList = ({ username }: { username?: string }) => {
+  const { currentTheme } = useEnhancedTheme();
   // ALL hooks must be called first
   const { currentUser } = useCurrentUser();
   const { posts, isLoading, error, refetch, toggleLike, toggleDislike, deletePost, checkIsLiked, checkIsDisliked, likingPostId, dislikingPostId, deletingPostId } = usePosts(username);
@@ -16,53 +20,112 @@ const PostsList = ({ username }: { username?: string }) => {
   // Early returns come AFTER all hooks
   if (isLoading) {
     return (
-      <View className='p-8 items-center'>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text className='text-gray-500 mt-2'>Loading posts...</Text>
+      <View style={{
+        padding: 32,
+        alignItems: 'center',
+        backgroundColor: currentTheme.colors.surface
+      }}>
+        <RetroLoader />
+        <Text style={{
+          color: currentTheme.colors.text + 'CC',
+          marginTop: 16,
+          fontFamily: 'monospace',
+          fontSize: 14
+        }}>
+          Loading posts...
+        </Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View className="p-8 items-center">
-        <Text className="text-gray-500 mb-4">Failed to load posts</Text>
-        <TouchableOpacity className="bg-blue-500 px-4 py-2 rounded-lg" onPress={() => refetch()}>
-          <Text className="text-white font-semibold">Retry</Text>
-        </TouchableOpacity>
-      </View>
+      <RetroTransition>
+        <View style={{
+          padding: 32,
+          alignItems: 'center',
+          backgroundColor: currentTheme.colors.surface
+        }}>
+          <Text style={{
+            color: currentTheme.colors.text + 'CC',
+            marginBottom: 16,
+            fontFamily: 'monospace',
+            fontSize: 16,
+            textAlign: 'center'
+          }}>
+            Failed to load posts
+          </Text>
+          <TouchableOpacity
+            style={{
+              backgroundColor: currentTheme.colors.primary,
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              borderRadius: 8,
+              shadowColor: currentTheme.colors.primary,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.5,
+              shadowRadius: 4,
+              elevation: 5,
+            }}
+            onPress={() => refetch()}
+          >
+            <Text style={{
+              color: currentTheme.colors.surface,
+              fontWeight: 'bold',
+              fontFamily: 'monospace'
+            }}>
+              Retry
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </RetroTransition>
     );
   }
 
   if (posts.length === 0) {
     return (
-      <View className="p-8 items-center">
-        <Text className="text-gray-500">No posts yet</Text>
-      </View>
+      <RetroTransition>
+        <View style={{
+          padding: 32,
+          alignItems: 'center',
+          backgroundColor: currentTheme.colors.surface
+        }}>
+          <Text style={{
+            color: currentTheme.colors.text + 'CC',
+            fontFamily: 'monospace',
+            fontSize: 16,
+            textAlign: 'center'
+          }}>
+            No posts yet
+          </Text>
+        </View>
+      </RetroTransition>
     );
   }
 
   return (
-    <>
-      {posts.map((post: Post) => (
-        <PostCard
-          key={post._id}
-          post={post}
-          onLike={toggleLike}
-          onDislike={toggleDislike}
-          onDelete={deletePost}
-          currentUser={currentUser}
-          isLiked={checkIsLiked(post.likes, currentUser)}
-          isDisliked={checkIsDisliked(post.dislikes, currentUser)}
-          onComment={(post: Post) => setSelectedPostId(post._id)}
-          likingPostId={likingPostId}
-          dislikingPostId={dislikingPostId}
-          deletingPostId={deletingPostId}
-        />
-      ))}
+    <RetroTransition>
+      <>
+        {posts.map((post: Post) => (
+          <PostCard
+            key={post._id}
+            post={post}
+            onLike={toggleLike}
+            onDislike={toggleDislike}
+            onDelete={deletePost}
+            currentUser={currentUser}
+            isLiked={checkIsLiked(post.likes, currentUser)}
+            isDisliked={checkIsDisliked(post.dislikes, currentUser)}
+            onComment={(post: Post) => setSelectedPostId(post._id)}
+            likingPostId={likingPostId}
+            dislikingPostId={dislikingPostId}
+            deletingPostId={deletingPostId}
+          />
+        ))}
 
-      <CommentsModal selectedPost={selectedPost} onClose={() => setSelectedPostId(null)} />
-    </>
+        <CommentsModal selectedPost={selectedPost} onClose={() => setSelectedPostId(null)} />
+      </>
+    </RetroTransition>
   )
 
 }

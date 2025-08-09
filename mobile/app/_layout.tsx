@@ -5,6 +5,8 @@ import "../global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { EnhancedThemeProvider } from '@/contexts/EnhancedThemeContext';
 
 const queryClient = new QueryClient();
 export default function RootLayout() {
@@ -23,16 +25,20 @@ export default function RootLayout() {
         tokenCache={tokenCache}
       >
         <QueryClientProvider client={queryClient}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="chat" />
-            <Stack.Screen name="post" />
-            <Stack.Screen name="userProfile" />
-            <Stack.Screen name="myProfile" />
-          </Stack>
-          <StatusBar style='dark' />
+          <ThemeProvider>
+            <EnhancedThemeProvider updateInterval={60000}>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="chat" />
+                <Stack.Screen name="post" />
+                <Stack.Screen name="userProfile" />
+                <Stack.Screen name="myProfile" />
+              </Stack>
+              <StatusBar style='dark' />
+            </EnhancedThemeProvider>
+          </ThemeProvider>
         </QueryClientProvider>
       </ClerkProvider>
     </GestureHandlerRootView>
