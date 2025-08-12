@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCurrentUser } from './useCurrentUser'
 import socketService from '../utils/socketService';
 import { MessageAPIService } from '../utils/messageAPI';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Message {
     _id: string;
@@ -34,13 +33,10 @@ export const useMessages = () => {
     const [isConnecting, setIsConnecting] = useState(false);
     const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
     const [lastMessages, setLastMessages] = useState<Record<string, Message>>({});
-    const [readMessages, setReadMessages] = useState<Set<string>>(new Set());
-    const [isReadMessagesLoaded, setIsReadMessagesLoaded] = useState(false);
 
     // Refs to avoid dependency loops
     const usersRef = useRef<User[]>([]);
     const allUsersRef = useRef<User[]>([]);
-    const readMessagesRef = useRef<Set<string>>(new Set());
 
     // Update refs when state changes
     useEffect(() => {
@@ -50,51 +46,6 @@ export const useMessages = () => {
     useEffect(() => {
         allUsersRef.current = allUsers;
     }, [allUsers]);
-
-    useEffect(() => {
-        readMessagesRef.current = readMessages;
-    }, [readMessages]);
-
-    // Load read messages from AsyncStorage on app start
-    useEffect(() => {
-        const loadReadMessages = async () => {
-            if (!currentUser?._id) return;
-
-            try {
-                const key = `readMessages_${currentUser._id}`;
-                const stored = await AsyncStorage.getItem(key);
-                if (stored) {
-                    const readMessageIds = JSON.parse(stored);
-                    setReadMessages(new Set(readMessageIds));
-                    console.log('📚 Loaded read messages from storage:', readMessageIds.length);
-                }
-            } catch (error) {
-                console.error('❌ Error loading read messages:', error);
-            } finally {
-                setIsReadMessagesLoaded(true);
-            }
-        };
-
-        loadReadMessages();
-    }, [currentUser?._id]);
-
-    // Save read messages to AsyncStorage whenever they change
-    useEffect(() => {
-        const saveReadMessages = async () => {
-            if (!currentUser?._id || !isReadMessagesLoaded) return;
-
-            try {
-                const key = `readMessages_${currentUser._id}`;
-                const readMessageIds = Array.from(readMessages);
-                await AsyncStorage.setItem(key, JSON.stringify(readMessageIds));
-                console.log('💾 Saved read messages to storage:', readMessageIds.length);
-            } catch (error) {
-                console.error('❌ Error saving read messages:', error);
-            }
-        };
-
-        saveReadMessages();
-    }, [readMessages, currentUser?._id, isReadMessagesLoaded]);
 
     // Initialize socket connection
     useEffect(() => {
@@ -162,13 +113,10 @@ export const useMessages = () => {
                     [senderId]: message
                 }));
 
-                // Only increment unread count if message hasn't been read
-                if (!readMessagesRef.current.has(message._id)) {
-                    setUnreadCounts(prev => ({
-                        ...prev,
-                        [senderId]: (prev[senderId] || 0) + 1
-                    }));
-                }
+                setUnreadCounts(prev => ({
+                    ...prev,
+                    [senderId]: (prev[senderId] || 0) + 1
+                }));
             }
         });
 
@@ -257,13 +205,28 @@ export const useMessages = () => {
                         // Count unread messages from this user
                         const unreadMessages = result.messages.filter((msg: Message) => {
                             const senderId = typeof msg.senderId === 'object' ? msg.senderId._id : msg.senderId;
-                            return senderId === user._id && !readMessagesRef.current.has(msg._id);
+                            return senderId === user._id; // Messages from the other user
                         });
 
-                        setUnreadCounts(prev => ({
-                            ...prev,
-                            [user._id]: unreadMessages.length
-                        }));
+                        // Set unread count based on whether the last message is from the other user
+                        if (unreadMessages.length > 0) {
+                            const lastMsg = result.messages[result.messages.length - 1];
+                            const lastMsgSenderId = typeof lastMsg.senderId === 'object' ? lastMsg.senderId._id : lastMsg.senderId;
+
+                            // If the last message is from the other user, mark it as 1 unread message
+                            if (lastMsgSenderId === user._id) {
+                                setUnreadCounts(prev => ({
+                                    ...prev,
+                                    [user._id]: 1 // Only count the last message as unread
+                                }));
+                            } else {
+                                // Last message is from current user, so no unread messages
+                                setUnreadCounts(prev => ({
+                                    ...prev,
+                                    [user._id]: 0
+                                }));
+                            }
+                        }
                     }
                 } catch (err) {
                     console.error(`Failed to load messages for user ${user._id}:`, err);
@@ -274,12 +237,12 @@ export const useMessages = () => {
         }
     }, [currentUser?._id]);
 
-    // Load last messages when users are loaded and read messages are loaded
+    // Load last messages when users are loaded
     useEffect(() => {
-        if ((allUsers.length > 0 || users.length > 0) && isReadMessagesLoaded) {
+        if (allUsers.length > 0 || users.length > 0) {
             loadLastMessages();
         }
-    }, [allUsers.length, users.length, isReadMessagesLoaded, loadLastMessages]);
+    }, [allUsers.length, users.length]);
 
     // Initialize unread counts when component mounts
     useEffect(() => {
@@ -314,16 +277,23 @@ export const useMessages = () => {
     const initializeUnreadCount = useCallback((userId: string, messages: Message[]) => {
         if (!currentUser?._id || messages.length === 0) return;
 
-        // Count unread messages from the other user that haven't been marked as read
-        const unreadMessages = messages.filter((msg: Message) => {
-            const senderId = typeof msg.senderId === 'object' ? msg.senderId._id : msg.senderId;
-            return senderId === userId && !readMessagesRef.current.has(msg._id);
-        });
+        // Check if the last message is from the other user
+        const lastMsg = messages[messages.length - 1];
+        const lastMsgSenderId = typeof lastMsg.senderId === 'object' ? lastMsg.senderId._id : lastMsg.senderId;
 
-        setUnreadCounts(prev => ({
-            ...prev,
-            [userId]: unreadMessages.length
-        }));
+        if (lastMsgSenderId === userId) {
+            // Only count the last message as unread if it's from the other user
+            setUnreadCounts(prev => ({
+                ...prev,
+                [userId]: 1
+            }));
+        } else {
+            // Last message is from current user, so no unread messages
+            setUnreadCounts(prev => ({
+                ...prev,
+                [userId]: 0
+            }));
+        }
     }, [currentUser?._id]);
 
     // Fetch messages with specific user
@@ -429,37 +399,12 @@ export const useMessages = () => {
     }, [userActivities]);
 
     // Mark messages as read for a specific user
-    const markMessagesAsRead = useCallback(async (userId: string) => {
-        try {
-            // Fetch messages for this user to get all message IDs
-            if (currentUser?._id) {
-                const result = await MessageAPIService.getMessages(currentUser._id, userId);
-                if (result.success && result.messages) {
-                    // Mark all messages from this user as read
-                    const messageIds = result.messages
-                        .filter((msg: Message) => {
-                            const senderId = typeof msg.senderId === 'object' ? msg.senderId._id : msg.senderId;
-                            return senderId === userId;
-                        })
-                        .map((msg: Message) => msg._id);
-
-                    setReadMessages(prev => {
-                        const newReadMessages = new Set(prev);
-                        messageIds.forEach((id: string) => newReadMessages.add(id));
-                        return newReadMessages;
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('Error marking messages as read:', error);
-        }
-
-        // Reset unread count for this user
+    const markMessagesAsRead = useCallback((userId: string) => {
         setUnreadCounts(prev => ({
             ...prev,
             [userId]: 0
         }));
-    }, [currentUser?._id]);
+    }, []);
 
     // Get unread count for a user
     const getUnreadCount = useCallback((userId: string) => {
@@ -486,7 +431,6 @@ export const useMessages = () => {
         error,
         isConnected,
         isConnecting,
-        isReadMessagesLoaded,
 
         // Actions
         fetchUsers,
